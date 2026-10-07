@@ -67,8 +67,14 @@ python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
 
 | | Functions | ARM / Thumb | Instructions | Switches | Through registers, unresolved | Conflicts |
 |---|---|---|---|---|---|---|
-| ARM9 (main + ITCM) | 5 395 | 5 392 / 3 | 303 106 | 121 (1 249 targets) | 2 408 | 0 |
-| ARM7 (where its autoloads run) | 925 | 916 / 9 | 37 038 | 37 (501 targets) | 45 | 0 |
+| ARM9 (main + ITCM) | 5 413 | 5 410 / 3 | 305 574 | 147 (1 834 targets) | 2 386 | 0 |
+| ARM7 (where its autoloads run) | 933 | 924 / 9 | 37 664 | 40 (712 targets) | 42 | 0 |
+
+(Session 3's figures. Session 2 had 5 395 and 925 functions: 17 of the
+ARM9's were a data area read as code, and discovery has since learned
+the forms below; `10-ndskit.md`.) Of the transfers through registers left
+unresolved, all but five are calls (`blx rN`, dispatched at run time);
+the five jumps are read in `09-recompiler.md`.
 
 **Almost all ARM.** The three Thumb functions of the ARM9 are the SDK's
 BIOS-call wrappers, which sit in the secure area's first 0x800 bytes
@@ -76,12 +82,13 @@ BIOS-call wrappers, which sit in the secure area's first 0x800 bytes
 `swi 11`). CodeWarrior compiled the game for ARM.
 
 **Against Ghidra 12's auto-analysis** (`ndskit/ghidra/ExportFuncs.java`;
-build/ghidra): of its 4 680 functions in the ARM9's segments, 4 646 are
-entries here and 17 lie inside another function's code; 17 are not
+build/ghidra): of its 4 680 functions in the ARM9's segments, 4 648 are
+entries here and 15 lie inside another function's code (session 2: 4 646
+and 17); 17 are not
 reached, 15 of them routines of Mobiclip's hand-written decoder
 (0x0213042C-0x02131590) that are reached through tables of offsets whose
 base a register carries in from elsewhere (`ldr r5, [r6, r5, lsl #2];
-mov lr, r8; add pc, r5, r6`). 749 functions are found that Ghidra has
+mov lr, r8; add pc, r5, r6`). 765 functions are found that Ghidra has
 not. The ARM7, compared at its run addresses: 535 of Ghidra's 536, 390
 more.
 
@@ -91,11 +98,21 @@ initialised variables). Inside the code area 49 KB stay unclassified
 (4%): tables inside functions and the unreached decoder routines.
 
 **The forms met**: CodeWarrior's switch (`cmp rI, #N; addls pc, pc,
-rI, lsl #2; b default;` N + 1 branches), 121 of them; its long-branch
-veneers (`ldr r12, [pc]; bx r12`); calls through registers (`blx rN`,
-2 408 left to run time: virtual methods and callbacks); Mobiclip's
-hand-written computed calls (`sub r3, pc, #k; add lr, pc, #4; ldr r8,
-[r3, r7, lsl #2]; add pc, r8, r3`).
+rI, lsl #2; b default;` N + 1 branches), also with the bound found
+further back (`cmp r0, #12; str r0, [r1]; addls ...`) and for a range of
+cases (`cmp r3, #0x47; bgt ...; subs r0, r3, #0x41; addpl pc, pc, r0,
+lsl #2`); its long-branch veneers (`ldr r12, [pc]; bx r12`); calls
+through registers (`blx rN`, 2 378 left to run time: virtual methods
+and callbacks); the SDK's divisions (0x02126428 signed, 0x0212663C
+unsigned), which jump into their unrolled loop (`add r2, r2, r2, lsl
+#1; add pc, pc, r2, lsl #2`); Mobiclip's hand-written code: computed
+calls (`sub r3, pc, #k; add lr, pc, #4; ldr r8, [r3, r7, lsl #2]; add
+pc, r8, r3`), targets built in two steps (`add r4, pc, #0x38; add r4,
+r4, #0x2600; movle pc, r4`), tables of offsets followed through
+registers (`add r6, pc, #k; ldr r12, [r6, r12, lsl #2]; add r6, r6,
+r12; ...; mov pc, r6`), tables indexed by bytes with their targets before
+them (`sub r5, pc, #0x18; ldr r6, [r5, r8]; add pc, r5, r6`), local
+subroutines entered with lr set (`add lr, pc, #4; beq ...; bne ...`).
 
 ## The frame loop
 
@@ -184,7 +201,11 @@ there.
 
 The SDK's standard component (crc32 0x1B16DBE2, the same in the five
 language archives), all ARM in the reached code (135 functions from the
-entry). Its crt0 starts as the ARM9's (`IME = 0`). The hardware it
+entry). It runs from three places (session 3): its crt0 (488 bytes) at
+0x02380000, 96 376 bytes autoloaded to 0x027E0000 (main RAM, on the
+ARM7's side) and 62 984 bytes autoloaded to 0x037F8000, which run from
+the shared WRAM (all of it the ARM7's) on into the ARM7's own WRAM at
+0x03800000. Its crt0 starts as the ARM9's (`IME = 0`). The hardware it
 touches, by the addresses in its literal pools: **the wireless hardware**
 (218: this component carries the wireless driver, though Moon has no
 multiplayer), SPI (SPICNT 43, SPIDATA 35: the touch screen, the

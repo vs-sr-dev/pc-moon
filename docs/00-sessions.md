@@ -67,3 +67,30 @@
 * The oracle learned `drag:` and `frames:`/`framesv:` (melonDS's frame
   step proved unreliable for counting: the VBlank count does not advance
   once per step).
+
+## Session 3 (2026-10-07) — the recompiler
+
+* **An ARM interpreter in ndskit** (`armemu`): both CPUs, ARM and Thumb,
+  the modes and their banked registers. Checked against Unicorn's ARM946
+  on 25 483 random instructions and 1 960 transfers (no difference
+  outside unaligned accesses, which the DS's CPUs rotate or align and
+  QEMU does not) and on the SDK's divisions with known answers.
+* **Discovery learned what the recompiler needed** (`10-ndskit.md`):
+  Mobiclip's hand-written jumps (constants in two steps, tables of
+  offsets through registers, local subroutines through lr), the SDK's
+  unrolled division, switch bounds further back, Thumb's `bx pc`, empty
+  callbacks; 17 false functions in a data table are gone (no function
+  opens with a condition), and a rule that could skip code at a join was
+  corrected. Moon: ARM9 5 413 functions, ARM7 933, 0 conflicts on three
+  cartridges.
+* **The recompiler** (`09-recompiler.md`): one C++ function per entry,
+  one module per program; flags stored only where some path reads them;
+  the PC as a constant; calls through registers dispatched with the mode
+  in bit 0; switches as `switch`. Both programs compile and link (31 MB
+  of C++, 42 seconds with clang).
+* **The self-test**: the instruction test of each CPU and 1 512 of the
+  game's own functions, 81 555 vectors recorded with the interpreter and
+  replayed on the recompiled code: no difference.
+* **The runtime's first lines** (`ndskit/runtime/`): the CPU context,
+  the memories the CPUs reach directly, the modes, the dispatch, the
+  self-test harness.

@@ -4,11 +4,14 @@ What is not known yet, roughly in the order the port will need it.
 
 ## The code
 
-* **How much is ARM and how much Thumb**, and where the switch tables
-  are: CodeWarrior's forms (`add pc, pc, rX, lsl #2` followed by a table
-  of branches, `ldr pc, [pc, rX, lsl #2]` with a table of addresses, and
-  Thumb's computed `add pc`/`bx` sequences) must all be recognised by
-  discovery.
+* **Five jumps through registers** that the recompiler leaves to run
+  time (`09-recompiler.md`): a context restored and jumped into at
+  0x021283AC (a thread switch or a longjmp?), a thread's start on the
+  ARM7 at 0x038072C0. The runtime has to give each its meaning.
+* **The 17 functions Ghidra finds and discovery does not reach**, 15 of
+  them Mobiclip decoder routines dispatched through a table whose base
+  comes in a register: when the movies play, a call to one of them stops
+  the runtime (`arm_call_unknown`) and names it.
 * **The main loop's structure.** One VBlank wait per frame, 60 in play
   (session 2); which rooms drop below it on the DS, and whether the logic
   steps per frame or by time (it matters only for rates above 60).

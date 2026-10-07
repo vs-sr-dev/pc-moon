@@ -32,8 +32,9 @@ secure area decrypted, placed in the repository's root or in `rom/`.
 ## Tools
 
 The Python tools need only Python 3.8+ and no dependencies (the oracle
-needs PIL for its screenshots). The oracle needs melonDS. Run from the
-repository root.
+needs PIL for its screenshots). The oracle needs melonDS; the
+recompiled code, clang, CMake and Ninja (MSYS2's on Windows). Run from
+the repository root.
 
 ```sh
 ROM="Moon (Europe) (En,Fr,De,Es,It).nds"
@@ -56,6 +57,14 @@ python -m ndskit.hw 04000400 04000540 027E0000
 # every function of both programs, and Ghidra's for comparison (ndskit/ghidra/ExportFuncs.java)
 python -m ndskit.recomp.discover "$ROM" --cpu 9 --report --out build/disc9.tsv
 python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
+
+# the recompiler: both programs to C++, the self-test (docs/09-recompiler.md)
+python -m ndskit.recomp "$ROM" --out build/recomp --optest
+python -m ndskit.recomp.selftest "$ROM" --cpu 9 --auto --out build/recomp/selftest/arm9.txt
+python -m ndskit.recomp.selftest "$ROM" --cpu 7 --auto --out build/recomp/selftest/arm7.txt
+cmake -S build/recomp -B build/recomp/b -G Ninja -DCMAKE_CXX_COMPILER=clang++ && ninja -C build/recomp/b
+build/recomp/b/selftest build/recomp/selftest/*.txt
+python -m ndskit.armemu "$ROM" --cpu 9 --call 02126428 --regs r0=64,r1=7      # run one of the game's functions
 
 # the oracle: melonDS, pressed, photographed and read through its savestates
 python tools/oracle.py --fresh --at 20:START,32:START,38:tap:128:96,44:A,48:shot,50:state
@@ -84,6 +93,13 @@ corrected: Moon runs at 60 frames a second in play (session 1 had
 measured a tutorial box). The play frame, the display lists sent by DMA
 from ITCM, and the camera's view matrix found (`docs/03-executables.md`).
 
+Session 3: the recompiler. ndskit gained an ARM interpreter (checked
+against Unicorn's ARM946), a recompiler from ARM and Thumb to C++ and the
+runtime's first lines. Both of Moon's programs, 5 413 and 933 functions,
+compile and link, and agree with the interpreter on 81 555 vectors: an
+instruction test of each CPU and 1 512 of the game's own functions
+(`docs/09-recompiler.md`).
+
 ## Documentation
 
 * [00-sessions.md](docs/00-sessions.md) — what each session did
@@ -94,6 +110,7 @@ from ITCM, and the camera's view matrix found (`docs/03-executables.md`).
 * [05-open-questions.md](docs/05-open-questions.md) — what is not known yet
 * [06-attack-plan.md](docs/06-attack-plan.md) — feasibility, where to cut, a better Moon on PC, the phases
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
+* [09-recompiler.md](docs/09-recompiler.md) — ARM and Thumb to C++, the self-test
 * [10-ndskit.md](docs/10-ndskit.md) — what this port gave ndskit
 
 ## Licence
