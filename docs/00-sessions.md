@@ -94,3 +94,32 @@
 * **The runtime's first lines** (`ndskit/runtime/`): the CPU context,
   the memories the CPUs reach directly, the modes, the dispatch, the
   self-test harness.
+
+## Session 4 (2026-10-07) — the runtime core
+
+* **The machine in ndskit** (`11-runtime.md`): both CPUs in quanta of
+  virtual time, each of the SDK's threads on its own coroutine (the
+  context switches of `OS_LoadContext` and of the IRQ handler followed
+  to the right one), interrupts as the BIOS takes them, the SWIs,
+  melonDS's direct boot, the I/O of both CPUs with VRAM's banks, timers,
+  DMA, IPC, the maths unit, the cartridge's reads and its EEPROM, SPI
+  (power, firmware, touch), the RTC, the sound registers. `ndsrun` runs
+  the game headless, deterministically.
+* **Moon runs**: it boots, plays its movies (Mobiclip's decoder copied
+  to the ITCM, recompiled where it runs: `--copy`), reads its save, and
+  with eleven presses goes through its menus into the first room.
+* **Against melonDS** (`ndskit.melonds`): at the same frame of the SDK's
+  VBlank count, after 464 frames with the same save, 74 bytes of main RAM differ (the RTC's
+  date, counters that follow time), the ITCM and the shared WRAM not at
+  all; after the route, the same room with the camera turned the same
+  way.
+* **What running taught** the kit: byte writes to a device's register,
+  the BIOS's wait giving the other CPU time, the backup memory's chip
+  select, the ARM7's BIOS sound tables; and discovery five more forms
+  (vtables of tiny methods, `this` thunks, interrupt stubs, a switch
+  bounded by its first compare, conditional code addresses and holes in
+  offset tables): Moon's ARM9 6 580 functions, all of Ghidra's covered,
+  0 conflicts on the three cartridges.
+* **Seeing inside**: a call trace (`ARM_ENTER`), breaks, a store watch
+  (it found the save check's failure), where each CPU polls, its stack.
+* Speed, headless: about 210 times the DS.

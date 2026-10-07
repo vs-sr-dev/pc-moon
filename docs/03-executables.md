@@ -70,7 +70,15 @@ python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
 | ARM9 (main + ITCM) | 5 413 | 5 410 / 3 | 305 574 | 147 (1 834 targets) | 2 386 | 0 |
 | ARM7 (where its autoloads run) | 933 | 924 / 9 | 37 664 | 40 (712 targets) | 42 | 0 |
 
-(Session 3's figures. Session 2 had 5 395 and 925 functions: 17 of the
+**Session 4**: 6 580 and 943 functions, 166 switches (2 022 targets) on
+the ARM9, 0 conflicts. Running the game showed what discovery had
+missed (`11-runtime.md`): C++'s tiny virtual methods and `this`
+thunks in vtables (most of the 1 167 new ARM9 functions), the static
+constructors' table at 0x0213C0A0, the ARM7's interrupt stubs, a
+switch bounded by its first compare, Mobiclip's decoder. All 4 680 of
+Ghidra's functions are now covered.
+
+(Session 3's figures above. Session 2 had 5 395 and 925 functions: 17 of the
 ARM9's were a data area read as code, and discovery has since learned
 the forms below; `10-ndskit.md`.) Of the transfers through registers left
 unresolved, all but five are calls (`blx rN`, dispatched at run time);
@@ -128,6 +136,43 @@ subroutines entered with lr set (`add lr, pc, #4; beq ...; bne ...`).
   translucent sort, W-buffering), finishes the frame's work, and calls
   `OS_WaitVBlankIntr` once (0x02008214), unless flags in 0x021505B0 say
   otherwise: 60 frames a second when the work fits in a VBlank period.
+
+## What the runtime showed (session 4)
+
+Read while running the game on ndskit's runtime (`11-runtime.md`); an
+inference is marked as one.
+
+* **The SDK's threads.** `OS_SaveContext` 0x02117214 (it stores the
+  address 0x0211725C, a `bx lr` with r0 = 1 four bytes before it) and
+  `OS_LoadContext` 0x02117260 (`ldm r0, {r0-r14}^; subs pc, lr, #4`),
+  called by `OSi_RescheduleThread` 0x02116B00 (save, then load the next);
+  `OS_DisableInterrupts` 0x02118590, `OS_RestoreInterrupts` 0x021185A4,
+  `OS_Terminate` 0x021188C8 (interrupts off, then halt for ever). The
+  ARM9 runs four threads: the launcher (`main`), 0x0211F3E8, 0x02120190
+  and the idle thread 0x02117110; the ARM7 eight (its `OS_SaveContext`
+  at 0x037FC64C, the load's `ldm ... ^` at 0x037FC6A0).
+* **The boot's order**: crt0, the static constructors through the table
+  at 0x0213C0A0 (0x02127D3C calls each; some are a lone `bx lr`), the
+  SDK's initialisation (PXI's handshake with the ARM7 in IPCSYNC,
+  0x0211A4F8), then `main`.
+* **The save is read at boot.** The state machine 0x0200625C checks a
+  status that 0x020F5FD4 sets after reading the backup memory (1 good, 2
+  failed, at offset 8 of the object 0x021505AC points to): on 2 it builds
+  the GUI (0x0207A1BC), loads `gui.tbl`, shows an error and calls
+  `OS_Terminate`. The backup memory is an EEPROM of 64 Kbit (melonDS's
+  `.sav` is 8 KiB; the ARM7 sends RDSR, READ with two address bytes,
+  WREN and WRITE).
+* **Mobiclip runs from the ITCM.** When the first movie starts,
+  0x0210A720 copies 0x659C bytes of the program, from 0x0212FED4 (the
+  hand-written decoder, 0x0212FED4-0x02136470), to the ITCM's free space
+  at 0x01FF9A60 (the place comes from an allocator: 0x02151D3C + 0x18),
+  and the decoder runs there.
+* **C++ exceptions** (inference): 0x021283DC saves r4-r11, sp and lr in
+  a context on the stack and calls 0x02127C28; 0x021283AC restores such
+  a context and jumps to r2: CodeWarrior's throw and its landing in a
+  catch block. Not called in the runs so far.
+* **The Nintendo logo** is copied from the ARM9 BIOS (0xFFFF0020-0xFFFF00BB)
+  to 0x021598A4 at boot.
 
 ## The geometry path
 

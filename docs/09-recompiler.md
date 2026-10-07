@@ -7,7 +7,8 @@ held to an ARM interpreter by a self-test.
 ```sh
 ROM="Moon (Europe) (En,Fr,De,Es,It).nds"
 export PATH=/c/msys64/mingw64/bin:$PATH
-python -m ndskit.recomp "$ROM" --out build/recomp --optest       # C++ for the ARM9, the ARM7, the instruction test
+python -m ndskit.recomp "$ROM" --out build/recomp --optest --copy 9:01FF9A60=0212FED4:659C
+                                         # C++ for the ARM9 (with Mobiclip's ITCM copy, session 4), the ARM7, the instruction test
 python -m ndskit.recomp.selftest "$ROM" --cpu 9 --auto --out build/recomp/selftest/arm9.txt
 python -m ndskit.recomp.selftest "$ROM" --cpu 7 --auto --out build/recomp/selftest/arm7.txt
 cmake -S build/recomp -B build/recomp/b -G Ninja -DCMAKE_CXX_COMPILER=clang++
@@ -73,6 +74,18 @@ What the ARM makes hard (`06-attack-plan.md`) is met so:
 | ARM9 | 5 413 | 305 574 | 39 | 4 / 2 382 | 147 (1 834) | 272 | 3 |
 | ARM7 | 933 | 37 664 | 6 | 0 / 39 | 40 (712) | 68 | 2 |
 
+Session 4, with what the runtime asked of discovery (`11-runtime.md`)
+and Mobiclip's decoder as it runs from the ITCM (`--copy`):
+
+| | Functions | Instructions | Calls through registers: expected / dispatched | Switches (targets) | Jumps to a known target | Jumps left to run time |
+|---|---|---|---|---|---|---|
+| ARM9 | 6 618 (38 in the ITCM copy) | 341 308 | 4 / 2 383 | 213 (2 652) | 516 | 4 |
+| ARM7 | 943 | 37 690 | 0 / 39 | 40 (712) | 76 | 2 |
+
+(Instructions are counted per function: code that several functions
+share, as the decoder's routines do, counts once for each.) The fourth
+jump of the ARM9 is the ITCM copy's own `mov pc, r6`.
+
 Generating both takes about 20 seconds and gives 31 MB of C++; a clean
 build of them with the instruction tests (clang 22, -O3, Ninja, 16
 threads) takes 42 seconds on this machine. *(Inference: the 2 382 calls dispatched
@@ -126,10 +139,24 @@ The jumps left to run time, read one by one:
 
 In all, 81 555 vectors and no difference: phase 3's mark (`06-attack-plan.md`).
 
+## Added in session 4
+
+* **Context saves and landings**: a function that stores an address of
+  its own code (`OS_SaveContext`) returns twice. After a call to it the
+  runtime is told the caller's sp (`arm_context_saved`); in the functions
+  that call it, every call catches `ArmUnwind` and goes on at the save's
+  return address, where a thread's context comes back when it is loaded
+  (`11-runtime.md`, threads).
+* **`ARM_ENTER`** at each function's entry: one branch on a flag, for the
+  runtime's call trace and breaks.
+* **`--copy CPU:DEST=SRC:LEN`**: a block the program copies elsewhere and
+  runs there, as a segment at its destination (checked by the runtime
+  only once copied).
+* **A store watch** in the fast stores (one compare): `ndsrun --watch`.
+
 ## What it does not do yet
 
-* Interrupts, the other CPU, timers, DMA, the hardware: phase 4. The stub
-  services stop at the first hardware access.
-* A store watch (for the camera's writer) and hooks, as saturnkit has.
+* Hooks (replacing a function of the game by the port's own), as
+  saturnkit has.
 * Thumb switches and halfword-offset tables: Moon has none; other
   cartridges do (`ndskit/recomp/discover.py`, known gaps).

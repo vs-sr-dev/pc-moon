@@ -27,3 +27,13 @@ writing down.
   64 MB image, `intro.mo` alone 4.2 MB.
 * **The banner credits only the publisher**: "Moon / Gamebridge Ltd." in
   all six languages, Japanese included.
+* **Mobiclip moves into the ITCM.** When the first movie starts, the
+  game copies Actimagine's hand-written decoder (25 KiB of its own
+  program) into the ARM9's 32 KiB of instruction memory, filling it to
+  the end, and runs it there: the DS's fastest memory given to the
+  movies.
+* **The heap is the same heap.** After 464 frames the runtime's and
+  melonDS's main RAM agree to 74 bytes: every object the game allocated
+  lies at the same address in both.
+* **The game checks its save before anything else**, and a failed read
+  stops it with an error message from `gui.tbl`.

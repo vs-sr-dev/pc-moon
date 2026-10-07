@@ -59,12 +59,17 @@ python -m ndskit.recomp.discover "$ROM" --cpu 9 --report --out build/disc9.tsv
 python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
 
 # the recompiler: both programs to C++, the self-test (docs/09-recompiler.md)
-python -m ndskit.recomp "$ROM" --out build/recomp --optest
+python -m ndskit.recomp "$ROM" --out build/recomp --optest --copy 9:01FF9A60=0212FED4:659C
 python -m ndskit.recomp.selftest "$ROM" --cpu 9 --auto --out build/recomp/selftest/arm9.txt
 python -m ndskit.recomp.selftest "$ROM" --cpu 7 --auto --out build/recomp/selftest/arm7.txt
 cmake -S build/recomp -B build/recomp/b -G Ninja -DCMAKE_CXX_COMPILER=clang++ && ninja -C build/recomp/b
 build/recomp/b/selftest build/recomp/selftest/*.txt
 python -m ndskit.armemu "$ROM" --cpu 9 --call 02126428 --regs r0=64,r1=7      # run one of the game's functions
+
+# the runtime: the game headless, compared with melonDS at the same frame (docs/11-runtime.md)
+build/recomp/b/ndsrun "$ROM" --out build/run --vblanks 466
+python -m ndskit.melonds build/oracle/first.ml1 --compare build/run
+build/recomp/b/ndsrun "$ROM" --out build/route --vblanks 3644 --input "1182:START,1542:tap:128:96,1902:START,2082:START,2262:START,2442:START,2622:A,2862:tap:128:120,3042:tap:128:120,3222:tap:128:120,3402:UP"
 
 # the oracle: melonDS, pressed, photographed and read through its savestates
 python tools/oracle.py --fresh --at 20:START,32:START,38:tap:128:96,44:A,48:shot,50:state
@@ -100,6 +105,15 @@ compile and link, and agree with the interpreter on 81 555 vectors: an
 instruction test of each CPU and 1 512 of the game's own functions
 (`docs/09-recompiler.md`).
 
+Session 4: the runtime core. ndskit's machine runs both programs as the
+DS does, headless and deterministic: two CPUs in virtual time, the SDK's
+threads each on a coroutine, interrupts, the BIOS, the I/O, VRAM's banks,
+timers, DMA, IPC, the cartridge and its save, SPI and the RTC. Moon boots,
+plays its movies (their decoder copied to the ITCM and recompiled where
+it runs), reads its save and, with eleven presses, walks its menus into
+the first room. Against melonDS at the same frame and with the same save, 74 bytes of
+4 MiB of main RAM differ after 464 frames (`docs/11-runtime.md`).
+
 ## Documentation
 
 * [00-sessions.md](docs/00-sessions.md) — what each session did
@@ -111,6 +125,7 @@ instruction test of each CPU and 1 512 of the game's own functions
 * [06-attack-plan.md](docs/06-attack-plan.md) — feasibility, where to cut, a better Moon on PC, the phases
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
 * [09-recompiler.md](docs/09-recompiler.md) — ARM and Thumb to C++, the self-test
+* [11-runtime.md](docs/11-runtime.md) — the machine: CPUs, threads, interrupts, BIOS, I/O; against melonDS
 * [10-ndskit.md](docs/10-ndskit.md) — what this port gave ndskit
 
 ## Licence

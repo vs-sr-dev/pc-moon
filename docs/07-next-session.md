@@ -1,50 +1,48 @@
-# Next session: the runtime core (phase 4)
+# Next session: the picture (phase 5)
 
-Phase 3 is done (`09-recompiler.md`): both programs are C++ that
-compiles, links and agrees with the interpreter on 81 555 vectors. The
-target now is **the boot to the first `OS_WaitVBlankIntr` (0x0211860C),
-headless**, its main RAM, ITCM and DTCM compared with melonDS's
-savestates at the same point; then on to the title screen.
+Phase 4 is done (`11-runtime.md`): the runtime runs Moon headless from
+its boot into its first room, deterministically, its memories matching
+melonDS's at the same frame (74 bytes of main RAM after 464 frames, with the same save). The
+target now is **the logos, the title and the first room on screen, in a
+window, played with the keyboard and the mouse as the stylus**, the
+pictures compared with the oracle's at the same frames.
 
-1. **The machine as the BIOS and the firmware leave it**: both programs
-   copied to their load addresses from the cartridge's header, the
-   header's copy and the firmware's user settings in the shared area
-   (0x027FFC00-0x027FFFFF: what the SDK reads there, from melonDS's
-   state at boot), each CPU in its mode with its stacks, the ARM9 at
-   0x02000800 and the ARM7 at its entry.
-2. **The two CPUs**: the ARM7 as a coroutine of the ARM9 (as saturnkit
-   runs the slave SH-2): it runs when the ARM9 waits on it (IPCSYNC, the
-   IPC FIFO, a poll of shared memory) and at its interrupts; the safe
-   points (`ARM_POLL`) are where the switch happens.
-3. **Interrupts**: IME/IE/IF on each CPU; the BIOS's entry (IRQ mode, the
-   user handler at DTCM+0x3FFC on the ARM9 and 0x0380FFFC on the ARM7,
-   the flags the BIOS's IntrWait checks at DTCM+0x3FF8 and 0x0380FFF8),
-   the exception return; taken at safe points.
-4. **The BIOS's SWIs** as HLE (`arm_swi`): IntrWait, VBlankIntrWait,
-   Halt, WaitByLoop, CpuSet, CpuFastSet, the decompressors (ndskit.lz's
-   formats), Div, Sqrt, GetCRC16: whichever the boot calls first.
-5. **The memory map** beyond the host arrays: the I/O registers of each
-   CPU, VRAM with its banks (VRAMCNT), palettes, OAM, the shared WRAM by
-   WRAMCNT, the BIOS area; the math unit (DIVCNT, SQRTCNT, exact).
-6. **Time**: VCOUNT and DISPSTAT (263 lines of 355 dots, the VBlank and
-   HBlank flags and interrupts), the timers, DMA (immediate, VBlank,
-   HBlank, the geometry FIFO's), IPC (SYNC and both FIFOs, their
-   interrupts).
-7. **The cartridge**: ROMCTRL and the main-data read (0xB7) over the
-   .nds file, as the SDK's CARD and FS libraries issue it; the backup
-   memory (AUXSPI) as a file. On the ARM7: SPI (touch, firmware, power),
-   the RTC.
-8. **The jumps left to run time** (`09-recompiler.md`): the context
-   restored at 0x021283AC, the ARM7's thread start at 0x038072C0, read
-   with the runtime running.
-9. **The comparison**: the runtime stops after N VBlanks and writes its
-   memories; `tools/oracle.py framesv:` gives melonDS's at the same
-   count. First mismatch, first fix.
-10. **ndskit** as the runtime grows: a store watch (for the camera's
-    writer) and hooks, as saturnkit has; `armemu` keeps its role as the
-    reference for anything the runtime's CPU side changes.
+1. **The window and the pace**: SDL3 and OpenGL 4.5 (as wiikit and
+   saturnkit), the two screens one above the other at first; the runtime
+   paced to the display (a frame of the DS per VBlank, waiting for the
+   host's clock), headless kept for the comparisons.
+2. **Input**: the keyboard as the buttons (the oracle's mapping), the
+   mouse on the lower screen as the stylus (EXTKEYIN's pen bit, the touch
+   controller's positions through the firmware's calibration: the input
+   script already drives them).
+3. **The 2D engines in software** at 256x192 per screen, a line at a
+   time: DISPCNT's modes, text and affine and extended backgrounds,
+   bitmaps (the movies: inference, Mobiclip draws into a bitmap or
+   VRAM in LCDC mode), sprites, windows, blending, master brightness, the
+   3D layer as engine A's BG0; VRAM through the bank pages (the extended
+   palettes' mappings still to add: E, F, G, H, I).
+4. **The geometry engine in software**: the packed commands from GXFIFO
+   (DMA from 0x01FF99B8) and the ports, the matrix stacks with GXSTAT's
+   levels and busy bit (the only thing the game reads back), vertices,
+   lighting, clipping, the polygon and vertex lists, SWAP_BUFFERS.
+5. **The renderer**: the lists drawn with OpenGL, first at 256x192 to
+   compare with melonDS, then at N times: the seven texture formats from
+   the texture slots, the polygon modes, translucency and its sort, alpha
+   test, fog, edge marking, w-buffering, the clear colour.
+6. **The comparison**: `tools/oracle.py` takes pictures at wall-clock
+   times; the runtime writes its screens at a VBlank; the frame of each
+   picture from the SDK's count (`framesv:`).
 
-Before starting: `python -m ndskit.rom ... --extract build/extract --nested`
-if `build/` is empty; the recompiled build is `09-recompiler.md`'s
-commands (MSYS2's clang, cmake and ninja in PATH); the oracle needs PIL
-(`C:\Python314\python.exe`).
+Left from phase 4, when they matter: a finer cost of time than a fixed
+cost per safe point; the BIOS's SWI frame on the SVC stack; the
+firmware's wireless block; the camera's writer, now within reach of
+`ndsrun --watch 021512E0:34` with a drag in the input script; the
+game's self-test vectors (`recomp.selftest --auto`) regenerated over the
+6 580 functions discovery now finds.
+
+Before starting: `python -m ndskit.rom ... --extract build/extract
+--nested` if `build/` is empty; the recompiled build and `ndsrun` are in
+`11-runtime.md` (MSYS2's clang, cmake and ninja in PATH, the recompiler
+with `--copy 9:01FF9A60=0212FED4:659C`); the oracle needs PIL
+(`C:\Python314\python.exe`). A run writes its save into its `--out`
+directory: a fresh directory is a new cartridge.

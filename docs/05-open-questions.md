@@ -2,16 +2,30 @@
 
 What is not known yet, roughly in the order the port will need it.
 
+## The runtime (session 4)
+
+* **Time.** A safe point costs a fixed number of ticks; the DS's cycles
+  differ by instruction and by memory. A few counters that follow time
+  (not frames) end up apart from melonDS's after 464 frames
+  (`11-runtime.md`). Whether any of the game's behaviour depends on them
+  (a random seed, a movie's pacing) is to be seen; a finer cost (per
+  block, from the instructions) is the remedy if so.
+* **The BIOS's sound tables** (volume, pitch, sine on the ARM7) are
+  worked out from their definitions; whether they round as the BIOS does
+  is for phase 6, by ear and against melonDS's results.
+* **The firmware's wireless block** (0x2A-0x163) is left empty; melonDS
+  fills it with its defaults. Moon has no multiplayer: harmless unless
+  the wireless driver checks it at boot (it did not stop a run).
+* **The runtime's BIOS frames**: melonDS's BIOS (FreeBIOS) pushes a SWI
+  frame on the SVC stack, the runtime does not: 16 bytes of stack
+  differ.
+* **Three of the jumps left to run time were not met** (`11-runtime.md`):
+  the C++ exception path (0x021283AC: an exception thrown would need an
+  unwind to a catch block up the host stack), the ARM9's `bx r12` at
+  0x02117DF4, the ARM7's thread start at 0x038072C0.
+
 ## The code
 
-* **Five jumps through registers** that the recompiler leaves to run
-  time (`09-recompiler.md`): a context restored and jumped into at
-  0x021283AC (a thread switch or a longjmp?), a thread's start on the
-  ARM7 at 0x038072C0. The runtime has to give each its meaning.
-* **The 17 functions Ghidra finds and discovery does not reach**, 15 of
-  them Mobiclip decoder routines dispatched through a table whose base
-  comes in a register: when the movies play, a call to one of them stops
-  the runtime (`arm_call_unknown`) and names it.
 * **The main loop's structure.** One VBlank wait per frame, 60 in play
   (session 2); which rooms drop below it on the DS, and whether the logic
   steps per frame or by time (it matters only for rates above 60).
@@ -21,22 +35,29 @@ What is not known yet, roughly in the order the port will need it.
   address** (session 2 found only GXSTAT by its own address).
 * **The camera's writer** (session 2: the view matrix is at 0x021512E0,
   kept as a matrix, no angle found): where the stylus's motion turns it,
-  the hook for mouselook. A store watch in the runtime will name it.
-* **The interrupt handlers**: which interrupts the game takes (VBlank,
-  HBlank, timers, IPC, the geometry FIFO, the card) and what each does.
+  the hook for mouselook. The runtime's store watch can now name it (a
+  run along the oracle's route stands in the first room at frame 3 642;
+  a drag in the input script is the next step).
+* **The interrupt handlers**: the ARM9 enables VBlank, timers 0 and 1
+  and the IPC FIFO's receive (the card's completion is raised but polled);
+  the ARM7 VBlank, timers 0 and 1, the RTC, the IPC FIFO and the wireless
+  (their IE in the runtime's runs). What each does is still to read.
 * **Which SDK libraries are linked** and which version of each: OS, FS,
   CARD, GX/G2/G3, SND, TP, RTC, PM, MI, FX; Mobiclip's own. Their
   functions are the same in every NitroSDK 4.2 game: named by signature
-  once, named everywhere.
+  once, named everywhere. Named so far, by reading: the thread switch,
+  the interrupt masks, `OS_Terminate`, `OS_WaitVBlankIntr`, PXI's
+  handshake (`03-executables.md`).
+* **ARM9 threads 1 and 2** (0x0211F3E8, 0x02120190): inference, the card
+  and file system's and another of the SDK's.
 * **What `rsd.ini` and `sar.ini` configure.**
 
 ## The ARM7
 
 * **Which SDK ARM7 component this is** (the SDK ships several, with or
   without wireless), and what it serves: sound, touch, RTC, power,
-  microphone, backup memory, wireless. Recompiling it means emulating
-  the ARM7's hardware it touches; reading its PXI command handlers tells
-  which.
+  microphone, backup memory, wireless. It runs eight threads
+  (`11-runtime.md`); reading its PXI command handlers tells which.
 * **Whether its crc32 (0x1B16DBE2) appears in other games**: if many
   NitroSDK 4.2 games ship this same binary, ndskit's recompiled ARM7 is
   shared by all of them.
@@ -52,6 +73,10 @@ What is not known yet, roughly in the order the port will need it.
 * melonDS's GDB stub drops the connection at the first packet on this
   build (Windows, 2025-11). Savestates serve; a working stub (another
   build) would add breakpoints and live reads.
+* The oracle presses by the wall clock, so a press lands on a frame that
+  varies from run to run; frame-exact input (pausing and stepping, as
+  `framesv:` does) would let the two runs be compared after the menus as
+  closely as before them.
 * The meaning of the other fields of melonDS's savestate sections (the
   CPU registers' order in `ARM9`/`ARM7`), when the port needs the
   registers at a moment and not only the memory.
