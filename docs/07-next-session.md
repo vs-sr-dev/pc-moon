@@ -1,48 +1,48 @@
-# Next session: the picture (phase 5)
+# Next session: the sound (phase 6)
 
-Phase 4 is done (`11-runtime.md`): the runtime runs Moon headless from
-its boot into its first room, deterministically, its memories matching
-melonDS's at the same frame (74 bytes of main RAM after 464 frames, with the same save). The
-target now is **the logos, the title and the first room on screen, in a
-window, played with the keyboard and the mouse as the stylus**, the
-pictures compared with the oracle's at the same frames.
+Phase 5 is done (`12-picture.md`): `ndsrun --window` plays Moon in a
+window in real time, the 2D engines in software, the geometry engine in
+the DS's fixed point, the 3D on OpenGL at the window's resolution; along
+the route its pictures match melonDS's. Before anything else, **the
+user's own play** of the window build: the keys, the mouse as the stylus
+(the menus, the "look around" drags in the first room), what looks wrong.
 
-1. **The window and the pace**: SDL3 and OpenGL 4.5 (as wiikit and
-   saturnkit), the two screens one above the other at first; the runtime
-   paced to the display (a frame of the DS per VBlank, waiting for the
-   host's clock), headless kept for the comparisons.
-2. **Input**: the keyboard as the buttons (the oracle's mapping), the
-   mouse on the lower screen as the stylus (EXTKEYIN's pen bit, the touch
-   controller's positions through the firmware's calibration: the input
-   script already drives them).
-3. **The 2D engines in software** at 256x192 per screen, a line at a
-   time: DISPCNT's modes, text and affine and extended backgrounds,
-   bitmaps (the movies: inference, Mobiclip draws into a bitmap or
-   VRAM in LCDC mode), sprites, windows, blending, master brightness, the
-   3D layer as engine A's BG0; VRAM through the bank pages (the extended
-   palettes' mappings still to add: E, F, G, H, I).
-4. **The geometry engine in software**: the packed commands from GXFIFO
-   (DMA from 0x01FF99B8) and the ports, the matrix stacks with GXSTAT's
-   levels and busy bit (the only thing the game reads back), vertices,
-   lighting, clipping, the polygon and vertex lists, SWAP_BUFFERS.
-5. **The renderer**: the lists drawn with OpenGL, first at 256x192 to
-   compare with melonDS, then at N times: the seven texture formats from
-   the texture slots, the polygon modes, translucency and its sort, alpha
-   test, fog, edge marking, w-buffering, the clear colour.
-6. **The comparison**: `tools/oracle.py` takes pictures at wall-clock
-   times; the runtime writes its screens at a VBlank; the frame of each
-   picture from the SDK's count (`framesv:`).
+The target now is **the music and the effects**, by ear against melonDS.
 
-Left from phase 4, when they matter: a finer cost of time than a fixed
-cost per safe point; the BIOS's SWI frame on the SVC stack; the
-firmware's wireless block; the camera's writer, now within reach of
-`ndsrun --watch 021512E0:34` with a drag in the input script; the
-game's self-test vectors (`recomp.selftest --auto`) regenerated over the
-6 580 functions discovery now finds.
+1. **The channels** (`sound.cpp`, the ARM7's 0x04000400-0x040004FF): the
+   16 channels' PCM8, PCM16 and IMA-ADPCM (its header, loop restart with
+   the saved state), PSG on 8-13 (duty), noise on 14-15; the timer as the
+   sample rate (the system clock / 2 over the timer), loop start and
+   length, one-shot and repeat; volume with its divider, panning; the
+   master volume and SOUNDCNT's mixer outputs; the busy bit ending when a
+   one-shot ends (now a guess from the length).
+2. **The capture units** (0x04000500-0x0400051F) if Moon uses them (the
+   SDK's reverb would, an inference): what the ARM7's driver writes will say.
+3. **The mixer**: the channels at the DS's rate (about 32 730 Hz, a
+   sample every 1 024 system cycles, 2 048 ticks of the runtime's clock),
+   in step with virtual time, into a ring that SDL3's audio stream drains,
+   resampled to the host's rate. Real time is paced by the host's clock:
+   the ring's slow drift against the audio device's clock to absorb.
+4. **The BIOS's sound tables** (`bios.cpp`): the volume, pitch and sine
+   tables are worked out from their definitions; with sound playing, the
+   driver's use of them can be checked by ear and against melonDS's
+   savestates (whose sections should hold the sound registers: to check).
+5. **The comparison**: melonDS's audio by ear; a headless WAV of a run
+   (`--wav`), and the channel registers against melonDS's savestates at
+   the same frame.
 
-Before starting: `python -m ndskit.rom ... --extract build/extract
---nested` if `build/` is empty; the recompiled build and `ndsrun` are in
-`11-runtime.md` (MSYS2's clang, cmake and ninja in PATH, the recompiler
-with `--copy 9:01FF9A60=0212FED4:659C`); the oracle needs PIL
-(`C:\Python314\python.exe`). A run writes its save into its `--out`
-directory: a fresh directory is a new cartridge.
+Left from phase 5, when they matter: the DS's anti-aliasing (MSAA at the
+window's scale would do the same job); edge marking and shadow polygons
+if a later room asks (each is noted once in the log); the title's lines
+1-24 one texel row apart from melonDS's; display capture, mosaic.
+From phase 4: a finer cost of time than a fixed cost per safe point; the
+BIOS's SWI frame on the SVC stack; the firmware's wireless block; the
+camera's writer (`ndsrun --watch 021512E0:34` with a drag; the input
+script has no drags yet); the self-test vectors regenerated over the
+6 580 functions.
+
+Before starting: the build as in `11-runtime.md` (MSYS2's clang, cmake,
+ninja and SDL3 in PATH; the recompiler with `--copy
+9:01FF9A60=0212FED4:659C`); `ndsrun` needs SDL3.dll from
+`C:\msys64\mingw64\bin` at run time. A run writes its save into its
+`--out` directory: a fresh directory is a new cartridge.

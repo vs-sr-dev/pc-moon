@@ -48,7 +48,8 @@ directory: a run from a new cartridge wants a new directory).
 | I/O | each CPU's registers as storage, the ones with an effect sent to their device: DISPSTAT and VCOUNT, the timers (counters worked out from the time, an event at each overflow, count-up), DMA (immediate, VBlank, HBlank, the card's, the geometry FIFO's), IPC (SYNC, both FIFOs, their interrupts), the maths unit (DIV and SQRT with melonDS's results), KEYINPUT, EXTKEYIN, HALTCNT, POWCNT, WRAMCNT |
 | The cartridge | ROMCTRL runs a command at once: the main-data read 0xB7 over the .nds file, the chip ID 0xB8; its words at 0x04100010 for the CPU or the card's DMA, the card interrupt at the end. The backup memory on AUXSPI: Moon's is an EEPROM of 64 Kbit (2-byte addresses), kept in the save file |
 | The ARM7's devices | SPI: the power manager's registers, the firmware (made up as melonDS makes it: user settings "melonDS", English; the MAC address 00:09:BF:11:22:33; reads, writes, status), the touch screen's controller (positions from the input script); the RTC (its serial protocol, a fixed date: 2009-04-20, Moon's European release); the sound registers, a one-shot channel busy until its samples would have played |
-| Not yet | the 2D engines and the geometry engine (phase 5: GXFIFO takes every word, GXSTAT reads idle and empty), the mixer (phase 6) |
+| The picture | the 2D engines, the geometry engine, the renderer and the window: `12-picture.md` (session 5) |
+| Not yet | the mixer (phase 6) |
 
 ## Against melonDS
 

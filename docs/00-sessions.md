@@ -123,3 +123,33 @@
 * **Seeing inside**: a call trace (`ARM_ENTER`), breaks, a store watch
   (it found the save check's failure), where each CPU polls, its stack.
 * Speed, headless: about 210 times the DS.
+
+## Session 5 (2026-10-07) — the picture
+
+* **Moon on screen** (`12-picture.md`): `ndsrun --window` plays the game
+  in a window, in real time, the keyboard as the buttons (the oracle's
+  keys) and the mouse on the lower screen as the stylus; headless runs
+  write both screens as PNGs at given frames (`--shots`, `--shot-every`).
+* **The 2D engines in software**, a line at a time as each starts: every
+  background form, sprites, windows, blending, the master brightness,
+  VRAM display; the 3D layer left to a compositor that has the 3D at its
+  own resolution. The logos, the movies, the menus and the lower screen
+  in play came out right at the first run.
+* **The geometry engine in software**, in the DS's fixed point:
+  matrices and their stacks, lighting, texture coordinate transforms,
+  strips, culling, clipping, the viewport, the tests; the swap waiting
+  for the VBlank with the commands behind it queued; the lists handed to
+  the rendering engine at line 215.
+* **The rendering engine on OpenGL 4.5** at any scale: the texture
+  memory read in the shader as the DS's texture unit reads it, the
+  colour modes in the DS's integers, translucency, the alpha test, fog
+  (the first room turns it on). The first room draws 1 103 polygons a
+  frame. In the window the 3D is drawn at the window's size under the
+  2D at the DS's.
+* **Against melonDS** along the route: the same screens at each step;
+  the title's quad within 496 pixels of 38 400 once the DS's
+  interpolation at a pixel's corner was found; the menu's lower screen
+  identical but for a pulsing border; the first room apart at polygon
+  edges (the DS's anti-aliasing, not drawn) and the player's position.
+  The memories at frame 464 unchanged (74 bytes).
+* Headless runs draw only the frames they photograph: the route in 1.3 s.
