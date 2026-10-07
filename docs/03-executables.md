@@ -58,18 +58,92 @@ Read from the disassembly (an inference is marked as one):
 `main` starts by setting both screens' master brightness (MASTER_BRIGHT
 and MASTER_BRIGHT_B, value 0x10) and calling into the SDK.
 
-## The code
+## The code map (session 2)
 
-**Almost all ARM, very little Thumb.** A rough recursive descent from
-the entry and `main` (following direct calls and the code pointers in
-the literal pools; session 1's exploration, not yet ndskit's discovery)
-reaches 1 518 functions: 1 515 in ARM, 3 in Thumb, 65 754
-instructions. That is a fraction of the program (most functions are
-reached through tables of pointers the descent does not read yet), but
-the proportion is telling: CodeWarrior compiled this game for ARM.
-For the recompiler, ARM is the simpler half (no BL pairs, one
-instruction width), and Thumb must still be handled where the SDK or a
-library uses it.
+```sh
+python -m ndskit.recomp.discover "$ROM" --cpu 9 --report --out build/disc9.tsv
+python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
+```
+
+| | Functions | ARM / Thumb | Instructions | Switches | Through registers, unresolved | Conflicts |
+|---|---|---|---|---|---|---|
+| ARM9 (main + ITCM) | 5 395 | 5 392 / 3 | 303 106 | 121 (1 249 targets) | 2 408 | 0 |
+| ARM7 (where its autoloads run) | 925 | 916 / 9 | 37 038 | 37 (501 targets) | 45 | 0 |
+
+**Almost all ARM.** The three Thumb functions of the ARM9 are the SDK's
+BIOS-call wrappers, which sit in the secure area's first 0x800 bytes
+(0x020004AA `SVC_WaitByLoop`, `swi 3`; 0x020006CE `SVC_CpuSet`,
+`swi 11`). CodeWarrior compiled the game for ARM.
+
+**Against Ghidra 12's auto-analysis** (`ndskit/ghidra/ExportFuncs.java`;
+build/ghidra): of its 4 680 functions in the ARM9's segments, 4 646 are
+entries here and 17 lie inside another function's code; 17 are not
+reached, 15 of them routines of Mobiclip's hand-written decoder
+(0x0213042C-0x02131590) that are reached through tables of offsets whose
+base a register carries in from elsewhere (`ldr r5, [r6, r5, lsl #2];
+mov lr, r8; add pc, r5, r6`). 749 functions are found that Ghidra has
+not. The ARM7, compared at its run addresses: 535 of Ghidra's 536, 390
+more.
+
+**The layout.** The code runs from 0x02000800 to 0x021369A8; the 103 KB
+after it to the end of the program are data (strings, tables,
+initialised variables). Inside the code area 49 KB stay unclassified
+(4%): tables inside functions and the unreached decoder routines.
+
+**The forms met**: CodeWarrior's switch (`cmp rI, #N; addls pc, pc,
+rI, lsl #2; b default;` N + 1 branches), 121 of them; its long-branch
+veneers (`ldr r12, [pc]; bx r12`); calls through registers (`blx rN`,
+2 408 left to run time: virtual methods and callbacks); Mobiclip's
+hand-written computed calls (`sub r3, pc, #k; add lr, pc, #4; ldr r8,
+[r3, r7, lsl #2]; add pc, r8, r3`).
+
+## The frame loop
+
+* `main` (0x02000C00) calls the game's state machine 0x0200625C (2 152
+  instructions), which holds the movie loops (each waits for a VBlank,
+  then steps Mobiclip's player, a C++ object reached through thin
+  wrappers at 0x0207A234-0x0207A3F8) and the play loop.
+* `OS_WaitVBlankIntr` is 0x0211860C (`SVC_WaitByLoop(1)`, then
+  `OS_WaitIrq(TRUE, VBlank)`); the SDK's threads wait in it, and the idle
+  thread halts the ARM9 with CP15's wait-for-interrupt (0x021188DC). There
+  is no `swi 5` in the program.
+* The play frame (around 0x020081B0) writes SWAP_BUFFERS = 3 (manual
+  translucent sort, W-buffering), finishes the frame's work, and calls
+  `OS_WaitVBlankIntr` once (0x02008214), unless flags in 0x021505B0 say
+  otherwise: 60 frames a second when the work fits in a VBlank period.
+
+## The geometry path
+
+* **Display lists by DMA.** 0x01FF99B8, in ITCM, sends a list to GXFIFO
+  by DMA in blocks of 0x1D8 words (control 0x84400000: 32-bit, source
+  incrementing, destination fixed, started at once), waiting for the
+  channel between blocks: the SDK's `MI_SendGXCommand` form. Its
+  callers: the scene renderer 0x01FF8000 (405 instructions, in ITCM,
+  called by the state machine), the mesh drawer 0x020607AC (called by
+  15 object routines), 0x0209B7F0 (8 more), 0x0206D050, 0x0207768C,
+  0x020BE1E8 and 0x020BE24C. The scenes and models therefore hold packed
+  command lists (inference: the lists are the data of `.scn` and `.msh`).
+* **Matrices through the ports**: MTX_MODE, MTX_PUSH, MTX_POP,
+  MTX_STORE and the rest written directly (the scene renderer and the
+  mesh code), as well as the SDK's small G3 wrappers at
+  0x021147FC-0x02114A00 that write GXFIFO.
+* **What the game reads back**: GXSTAT only (7 places: busy, matrix
+  stack); no literal of BOX_TEST, POS_TEST, VEC_TEST or the result
+  registers. The port's geometry engine has to answer GXSTAT; the tests
+  are not used (inference: unless an address is formed from a base).
+
+## The camera
+
+Savestates around stylus drags in the first room (`tools/oracle.py`,
+`drag:`) show the **view matrix at 0x021512E0**: a flag word, then a 4x3
+matrix in 20.12 fixed point (the 3x3 rotation at 0x021512E4-0x02151304,
+the translation at 0x02151308-0x02151310), with a copy at 0x0216A540.
+Two drags to the right turned it by 66 and 59 degrees about the vertical
+axis; a drag down tilted it by 20 degrees. No 16- or 32-bit word in main
+RAM follows the yaw in proportion: the orientation seems to be kept as
+the matrix itself, rotated each frame (inference). 0x02061108, a model
+drawer, reads it; its writer is still to be found, the first job for a
+store watch when the runtime runs.
 
 **The hardware the ARM9 touches** (addresses loaded from literal pools,
 in the reached code): the division and square-root units (DIVCNT 39,
@@ -90,9 +164,21 @@ libraries are linked is for phase 2 (signatures).
 
 ## The frame rate
 
-Measured in melonDS (`06-attack-plan.md`): in the first room, standing
-still, eight counters of the game advance by exactly 60 every 120
-VBlanks, in two intervals of 2 seconds: 30 frames a second.
+**60 frames a second in play.** The game's frame (in the big state
+function 0x0200625C that `main` calls) ends by writing SWAP_BUFFERS
+(value 3) and calling `OS_WaitVBlankIntr` (0x0211860C: `SVC_WaitByLoop(1)`
+then `OS_WaitIrq(1, VBlank)`) once: a loop that aims at 60 and drops to
+30 when a frame's work outlasts one VBlank period.
+
+Measured in melonDS from savestates taken 2 seconds apart: the word at
+0x022F0240 (inference: the game loop's iteration count) advances by
+120 every 120 VBlanks in play (the first room, the HUD up, standing
+still) and in the options menu, and by 60 every 120 VBlanks while the
+tutorial's modal box is open. Session 1 measured only the last case and
+wrote "30 frames a second"; the claim found online that the engine runs
+at 60 (Renegade Kid's engine from Dementium) is right for play. Heavier
+rooms may still drop below 60 on the DS: to be measured as the port gets
+there.
 
 ## The ARM7
 

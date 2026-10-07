@@ -31,7 +31,9 @@
   the connection on this build. The scripted route reaches the first
   room in under 50 seconds.
 * **The frame rate**: 30 frames a second, measured from three
-  savestates (eight game counters +60 per 120 VBlanks).
+  savestates (eight game counters +60 per 120 VBlanks). *Wrong, found in
+  session 2: the tutorial's modal box was open; the game runs at 60 in
+  play.*
 * **The plan** (`06-attack-plan.md`): static recompilation of both
   CPUs (the ARM7 as a coroutine, its recompiled module reusable by every
   game with the same component), the hardware cut at its registers, the
@@ -42,3 +44,26 @@
   `rom`, `hw`, `lz`, `sdat`, `arm` (equal to capstone on every ARMv5TE
   encoding tested). `rom`'s overlays and backward LZ checked on two
   other cartridges of the user's, which found two bugs.
+
+## Session 2 (2026-10-07) — the code map, the frame rate corrected
+
+* **Function discovery in ndskit** (`recomp.discover`, `10-ndskit.md`):
+  the programs read where they run (the ARM7 mostly in WRAM and at
+  0x027E0000, its ModuleParams found by shape), ARM and Thumb, switches,
+  veneers, hand-written dispatch. Moon's ARM9: 5 395 functions, 303 106
+  instructions, 0 conflicts; 99.6% of Ghidra's functions covered and 749
+  more. Its ARM7: 925, 535 of Ghidra's 536. Checked on two other
+  cartridges, one of which taught two rules.
+* **The frame rate is 60 in play** (`03-executables.md`): session 1's
+  30 was measured with the tutorial's modal box open. The user found the
+  claim online that the engine runs at 60 and asked; three measurements
+  of the loop counter (box, menu, play) and the play frame's single
+  `OS_WaitVBlankIntr` settled it.
+* **The geometry path**: display lists by DMA to GXFIFO from an ITCM
+  routine, called by the scene renderer (also in ITCM) and the mesh
+  drawers; matrices through the ports; only GXSTAT read back.
+* **The camera**: the view matrix at 0x021512E0, found from savestates
+  around stylus drags; no angle variable behind it.
+* The oracle learned `drag:` and `frames:`/`framesv:` (melonDS's frame
+  step proved unreliable for counting: the VBlank count does not advance
+  once per step).

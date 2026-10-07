@@ -16,3 +16,11 @@ as the kit's.
 | `lz` | the BIOS's LZ77, LZ11 and RLE; `--scan` | Moon's 503 scene and collision files |
 | `sdat` | SDAT: every record of the eight kinds, the symbols (sequence archives' inner names too), FAT, extraction by name | Moon's sound archive |
 | `arm` | ARMv5TE/ARMv4T and Thumb decoder: structured fields, targets, interworking, `writes_pc`; disassembly with literals and register names; `--refs`, `--census`, `--arm7` | every Thumb halfword and 1.39 million ARM words against capstone 5: no disagreement on a v5TE encoding |
+
+## Session 2
+
+| Module | What | Checked by |
+|---|---|---|
+| `rom` | the ARM7's ModuleParams, found by its shape (it has no footer); `--info` shows its autoloads | three cartridges (SDK 4.1, 4.2, 5.4) |
+| `recomp.discover` | function discovery: segments at their run addresses, ARM and Thumb, interworking, veneers and calls through registers by straight-line constants, CodeWarrior's `addls pc` switch, hand-written jumps through offset tables, lr set as a return address, opposite conditions ending a block, pointer/boundary/prologue seeds | Moon's ARM9 and ARM7 against Ghidra (99.6% and 535 of 536 of its functions, many more besides), 0 conflicts on three cartridges; a conflict on another cartridge taught two rules (an lr set further back, opposite conditions) |
+| `ghidra/ExportFuncs.java` | Ghidra's functions with their mode, and a pre-script that gives analysis its root | Moon's ARM9, ITCM block and ARM7 |

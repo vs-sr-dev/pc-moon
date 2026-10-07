@@ -28,12 +28,12 @@ Why it is favourable here:
 4. **The sound is the SDK's sequencer.** 43 sequences and 67 effects in
    one SDAT, no streams: the ARM7's own sequencer plays them, so the
    port needs the 16 sound channels, not a music player.
-5. **The game runs at 30 frames a second**, measured in melonDS (eight
-   counters of the game advance by 60 while the SDK's VBlank counter
-   advances by 120, in two intervals of 2 seconds), on a machine whose
-   CPU is a 67 MHz ARM946E-S: a PC has orders of magnitude to spare for
-   the recompiled code, the geometry engine in software and a
-   high-resolution renderer.
+5. **The game already runs at 60 frames a second** in play (measured in
+   melonDS, session 2; `03-executables.md`): one VBlank wait per frame,
+   no logic to re-time for 60. Its CPU is a 67 MHz ARM946E-S: a PC has
+   orders of magnitude to spare for the recompiled code, the geometry
+   engine in software and a high-resolution renderer, so the port also
+   removes whatever slowdowns the DS had in its heaviest rooms.
 
 What makes it harder than a Saturn or Wii port:
 
@@ -133,26 +133,27 @@ sensitivity curve, and turning only as fast as the stylus could.
 **Level 2 — the mouse is the camera.** The camera's yaw and pitch, found
 in the recompiled code (by following what the touch screen's samples
 feed), set directly from the mouse's raw deltas, at full precision, with
-a sensitivity setting and invert. Then the view turns at the display's
-rate even while the world steps at 30 frames a second: the camera's
-orientation is the one thing a player feels at once, and the port can
-render the scene with the latest orientation at every display refresh.
+a sensitivity setting and invert. Then the view can turn at the
+display's rate (120, 144 Hz) even while the world steps at 60: the
+camera's orientation is the one thing a player feels at once, and the
+port can render the scene with the latest orientation at every display
+refresh.
 
 ### The frame rate
 
-30 frames a second, locked, in the first room. Before promising 60, the
-port has to learn how the game steps (per frame or by elapsed VBlanks),
-as Virtual Hydlide taught (its logic looked time-based and was not).
-Three levels, as there:
+60 frames a second in play, one VBlank wait per frame (session 2;
+session 1's "30" was measured with the tutorial's modal box open). So:
 
-1. **No slowdown**: the original 30, never below it (the DS's own
-   slowdowns, if Moon has them, vanish).
-2. **The camera at the display's rate** (level 2 above): most of what 60
-   fps gives an FPS, without touching the game's logic.
-3. **60 for everything**: either the game's steps halved where they are
-   (if the logic follows a time step, changing it), or the geometry
-   interpolated between two frames by the port's own geometry engine
-   (it sees every matrix and vertex the game sends).
+1. **A steady 60**: the DS's own drops in heavy rooms, if any, vanish,
+   since the recompiled code and the PC's renderer finish a frame in a
+   fraction of a VBlank.
+2. **The camera at the display's rate** (level 2 above) on 120 or 144 Hz
+   monitors, without touching the game's logic.
+3. **Everything at the display's rate**, as an option: the geometry
+   interpolated between two frames by the port's own geometry engine (it
+   sees every matrix and vertex the game sends), at the cost of a frame
+   of latency; or the game's steps, if they follow a time step,
+   shortened. Only worth it once the rest is done.
 
 ### The two screens
 

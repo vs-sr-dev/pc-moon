@@ -53,9 +53,14 @@ python -m ndskit.arm "$ROM" --offset 4000 --size 152078 --base 02000000 --at 020
 python -m ndskit.arm "$ROM" --offset 4000 --size 152078 --base 02000000 --refs 04000000:04002000
 python -m ndskit.hw 04000400 04000540 027E0000
 
+# every function of both programs, and Ghidra's for comparison (ndskit/ghidra/ExportFuncs.java)
+python -m ndskit.recomp.discover "$ROM" --cpu 9 --report --out build/disc9.tsv
+python -m ndskit.recomp.discover "$ROM" --cpu 7 --out build/disc7.tsv
+
 # the oracle: melonDS, pressed, photographed and read through its savestates
 python tools/oracle.py --fresh --at 20:START,32:START,38:tap:128:96,44:A,48:shot,50:state
 python tools/oracle.py --peek build/oracle/t50.ml1 027FFC3C:4
+python tools/oracle.py --fresh --at 20:START,26:tap:128:96,32:START,35:START,38:START,41:START,44:A,48:tap:128:120,51:tap:128:120,54:tap:128:120,57:UP,61:state,64:drag:60:120:110:120,66:state
 ```
 
 ## Status
@@ -66,11 +71,18 @@ NitroROM images of their own), the formats at a glance (textures and
 materials in the GPU's own form, BIOS-compressed scenes, Mobiclip
 movies, all music sequenced), the oracle (melonDS driven from here,
 into the first room in under 50 seconds; read through its savestates),
-the frame rate measured (30 fps), and the plan: static recompilation,
+the frame rate measured (30 fps; session 2 found it is 60 in play), and the plan: static recompilation,
 the hardware cut at its registers, the 3D drawn by the PC's GPU at its
 resolution, the mouse first as the stylus and then as the camera
 (`docs/06-attack-plan.md`). ndskit begun: `rom`, `hw`, `lz`, `sdat`,
 `arm`.
+
+Session 2: the code map. ndskit finds every function of both programs
+(the ARM9's 5 395, 99.6% of what Ghidra finds and 749 more; the ARM7's
+925, read where its autoloads run), with no conflict. The frame rate
+corrected: Moon runs at 60 frames a second in play (session 1 had
+measured a tutorial box). The play frame, the display lists sent by DMA
+from ITCM, and the camera's view matrix found (`docs/03-executables.md`).
 
 ## Documentation
 

@@ -15,6 +15,13 @@ wall clock), does WHAT:
     START / A+B / ...    press these buttons for 0.15 s (DS names: A B X Y L R
                          START SELECT UP DOWN LEFT RIGHT), through the keyboard
     tap:X:Y              touch the lower screen at (X, Y) in its 256x192 pixels
+    drag:X0:Y0:X1:Y1     the stylus slid on the lower screen from one point to the other (0.5 s)
+    frames:N[:BUTTONS]   pause, hold BUTTONS (and DRAG: the stylus sliding on the
+                         lower screen), step N frames, a picture after each
+                         (DIR/t<SECONDS>_fNN.png), and print how many pixels of
+                         the upper screen changed at each step
+    framesv:N[:BUTTONS]  the same, with a savestate after each step to read the
+                         SDK's VBlank count (0x027FFC3C) of every picture
 
 The game's memory is read from melonDS's savestates (`State`): the whole
 machine at that moment, in sections. Checked on this build: main RAM is
@@ -54,7 +61,7 @@ except Exception:
 
 VK = {"A": 0x58, "B": 0x5A, "X": 0x53, "Y": 0x41, "L": 0x51, "R": 0x57, "START": 0x0D,
       "SELECT": 0x08, "LEFT": 0x25, "UP": 0x26, "RIGHT": 0x27, "DOWN": 0x28}
-VK_SHIFT, VK_F1 = 0x10, 0x70
+VK_SHIFT, VK_F1, VK_P, VK_N = 0x10, 0x70, 0x50, 0x4E
 
 
 def find_rom():
@@ -215,6 +222,84 @@ def tap(hwnd, x, y, hold=0.15):
         time.sleep(hold if flag == 0x0002 else 0)
 
 
+def drag(hwnd, x0, y0, x1, y1, seconds=0.5):
+    """The stylus down at (x0, y0) on the lower screen, slid to (x1, y1), lifted."""
+    ox, oy, s, _ = screens(hwnd)
+    cx, cy, _, _ = client_box(hwnd)
+
+    def at(x, y):
+        user32.SetCursorPos(int(cx + ox + (x + 0.5) * s), int(cy + oy + (192 + y + 0.5) * s))
+    user32.SetForegroundWindow(hwnd)
+    at(x0, y0)
+    time.sleep(0.05)
+    m = INPUT(type=0)
+    m.u.mi.dwFlags = 0x0002
+    _send(m)
+    steps = max(1, int(seconds / 0.02))
+    for k in range(1, steps + 1):
+        at(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps)
+        time.sleep(seconds / steps)
+    m = INPUT(type=0)
+    m.u.mi.dwFlags = 0x0004
+    _send(m)
+
+
+def frames(hwnd, n, held, out, tag, slot=None):
+    """Pause, hold `held` (DS buttons, and DRAG: the stylus sliding right on the
+    lower screen), step n frames with a screenshot after each, let go, resume.
+    melonDS's pause and frame step are P and N in the oracle's settings."""
+    keys(hwnd, [VK_P], hold=0.05)
+    time.sleep(0.2)
+    vks = [VK[b] for b in held if b in VK]
+    drag = "DRAG" in held
+    _send(*[_key(v, False) for v in vks])
+    ox, oy, s, _ = screens(hwnd)
+    cx, cy, _, _ = client_box(hwnd)
+    x0, y0 = cx + ox + 64 * s, cy + oy + (192 + 96) * s
+    if drag:
+        user32.SetCursorPos(int(x0), int(y0))
+        m = INPUT(type=0)
+        m.u.mi.dwFlags = 0x0002
+        _send(m)
+    paths = []
+    vbl = []
+    for i in range(n):
+        if drag:
+            user32.SetCursorPos(int(x0 + (i + 1) * 3 * s), int(y0))
+        time.sleep(0.05)
+        keys(hwnd, [VK_N], hold=0.03)
+        time.sleep(0.15)
+        p = os.path.join(out, "%s_f%02d.png" % (tag, i))
+        shot(hwnd, p)
+        paths.append(p)
+        if slot:                                # the VBlank count of this picture
+            st = save_state(hwnd, slot, os.path.join(out, "step.ml1"))
+            vbl.append(State(st).u32(0x027FFC3C) if st else None)
+    if drag:
+        m = INPUT(type=0)
+        m.u.mi.dwFlags = 0x0004
+        _send(m)
+    _send(*[_key(v, True) for v in reversed(vks)])
+    keys(hwnd, [VK_P], hold=0.05)
+    return paths, vbl
+
+
+def changes(paths):
+    """For consecutive pictures: how many pixels of the upper screen differ."""
+    from PIL import Image, ImageChops
+    out = []
+    prev = None
+    for p in paths:
+        im = Image.open(p).convert("RGB")
+        w, h = im.size
+        top = im.crop((0, 0, w, h // 2))
+        if prev is not None:
+            diff = ImageChops.difference(top, prev).convert("L").point(lambda v: 255 if v > 8 else 0)
+            out.append(sum(1 for v in diff.getdata() if v))
+        prev = top
+    return out
+
+
 def save_state(hwnd, slot_path, dest):
     """melonDS's Shift+F1, then the slot's file moved to dest once it is complete."""
     if os.path.exists(slot_path):
@@ -284,6 +369,18 @@ def main(argv=None):
                     print("%6.1f state %s" % (t, dest))
                 else:
                     print("%6.1f peek %s" % (t, peek(State(dest), what[5:])))
+            elif what.startswith("frames:") or what.startswith("framesv:"):
+                parts = what.split(":")
+                held = parts[2].upper().split("+") if len(parts) > 2 and parts[2] else []
+                paths, vbl = frames(hwnd, int(parts[1]), held, out, "t%g" % t,
+                                    slot if what.startswith("framesv:") else None)
+                print("%6.1f frames %s: upper-screen pixels changed per step %s" % (t, what, changes(paths)))
+                if vbl:
+                    print("       VBlank count at each picture %s" % vbl)
+            elif what.startswith("drag:"):
+                x0, y0, x1, y1 = (int(v) for v in what.split(":")[1:5])
+                drag(hwnd, x0, y0, x1, y1)
+                print("%6.1f drag %d,%d -> %d,%d" % (t, x0, y0, x1, y1))
             elif what.startswith("tap:"):
                 _, x, y = what.split(":")
                 tap(hwnd, int(x), int(y))

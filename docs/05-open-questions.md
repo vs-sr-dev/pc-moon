@@ -9,21 +9,16 @@ What is not known yet, roughly in the order the port will need it.
   of branches, `ldr pc, [pc, rX, lsl #2]` with a table of addresses, and
   Thumb's computed `add pc`/`bx` sequences) must all be recognised by
   discovery.
-* **The main loop and its pacing.** The game runs at 30 frames a second
-  (`06-attack-plan.md`): does it wait for two VBlanks every frame, and
-  does its logic step per frame or by the VBlanks elapsed? The answer
-  decides how 60 fps is reached.
-* **How geometry reaches the GPU**: packed command lists sent to GXFIFO
-  by DMA (the geometry FIFO start mode), lists written by the CPU, or
-  the command ports one by one. And whether the scenes and models hold
-  ready display lists (`02-data-formats.md`).
-* **What the ARM9 reads back from the 3D engine**: BOX_TEST for
-  culling, POS_TEST/VEC_TEST, the clip matrix, RAM_COUNT, the rendered
-  line count. Anything it reads must come out of the port's geometry
-  engine exactly.
-* **Where the touch screen's samples go**: the stylus's motion turns the
-  camera; following it leads to the camera's yaw and pitch, the hooks for
-  mouselook.
+* **The main loop's structure.** One VBlank wait per frame, 60 in play
+  (session 2); which rooms drop below it on the DS, and whether the logic
+  steps per frame or by time (it matters only for rates above 60).
+* **The display lists' layout in `.scn` and `.msh`** (session 2: they
+  reach GXFIFO by DMA from an ITCM routine; `03-executables.md`).
+* **Whether any test or result register is read through a base
+  address** (session 2 found only GXSTAT by its own address).
+* **The camera's writer** (session 2: the view matrix is at 0x021512E0,
+  kept as a matrix, no angle found): where the stylus's motion turns it,
+  the hook for mouselook. A store watch in the runtime will name it.
 * **The interrupt handlers**: which interrupts the game takes (VBlank,
   HBlank, timers, IPC, the geometry FIFO, the card) and what each does.
 * **Which SDK libraries are linked** and which version of each: OS, FS,

@@ -1,40 +1,36 @@
-# Next session: the code map (phase 2)
+# Next session: the recompiler (phase 3)
 
-Goal: know every function of both programs and what the game does each
-frame, so the recompiler of phase 3 has its input.
+Phase 2 is done in what matters for the recompiler: every function of
+both programs is known (`03-executables.md`). Its remaining questions
+(the camera's writer, the SDK's names) are easier to answer with the
+runtime's store watch than by reading, so they move on with it.
 
-1. **Function discovery in ndskit** (`ndskit/recomp/discover.py`, on the
-   model of saturnkit's): recursive descent over ARM and Thumb with the
-   mode carried through `bx`/`blx` and odd addresses; literal pools as
-   data; constant propagation for calls through registers; CodeWarrior's
-   switch forms (`add pc, pc, rX, lsl #2` + branch table, `ldr pc, [pc,
-   rX, lsl #2]` + address table, Thumb's); code pointers in data
-   (function tables, C++ vtables if any); the ITCM block at its run
-   address. Done when: no function's descent meets data or an undefined
-   instruction, every switch target is code, and Ghidra's auto-analysis
-   of the ARM9 (headless, ARM:LE:32:v5t) finds nothing discovery misses
-   except what nothing references.
-2. **The SDK named by signature**: OS (interrupts, threads, alarms,
-   arena/heap), FS/CARD, GX/G3/G2, SND, TP, PM, RTC, MI (DMA, copies),
-   FX; at least the entry points the port will hook or watch:
-   `OS_WaitVBlankIntr`, the IRQ table, `FS_ReadFile`, the touch sampling,
-   the geometry FIFO's DMA. ndskit gets a signature format the next game
-   reuses.
-3. **The frame loop**: from `main` to the per-frame loop; how it waits
-   (VBlank interrupts, `SVC_WaitVBlankIntr`), how many VBlanks a frame,
-   whether the logic steps per frame or by elapsed time; checked live
-   with the oracle (counters in savestates, as in session 1).
-4. **The geometry path**: how the scenes and models reach the GPU
-   (display lists by DMA to GXFIFO, the ports, or both), what the game
-   reads back from the 3D engine (BOX_TEST, POS_TEST, results).
-5. **The camera**: from the touch screen's samples (the TP library) to
-   the camera's yaw and pitch: the addresses of the angles, found in the
-   code and confirmed in savestates taken before and after a drag.
-6. **The ARM7**: its PXI command handlers, so the list of hardware it
-   needs is complete; whether its crc32 is in the other cartridges on
-   this machine.
-7. **An ARM interpreter in ndskit** (`armemu`), if time allows: the
-   recompiler's oracle, as `sh2emu` was saturnkit's.
+1. **An ARM interpreter in ndskit** (`armemu`): ARMv5TE and Thumb,
+   conditions and flags, the shifter's carry, LDM/STM with every mode,
+   the multiplies and the DSP extensions, CLZ, interworking, processor
+   modes with their banked registers. The recompiler's oracle, as
+   `sh2emu` was saturnkit's. Checked by running functions of the game
+   that run alone (the SDK's division, memory and string routines, the
+   fixed-point maths) and by known answers.
+2. **The emitter** (`ndskit/recomp/emit.py` and `python -m
+   ndskit.recomp`): one C++ function per entry; the condition on each
+   instruction; the shifter and the flags computed only where read; the
+   PC as a value; calls through registers by a dispatch over the known
+   entries, with the mode in bit 0; switches as `switch`; literal pools
+   read as constants; the ITCM block at its run address; CP15 operations
+   as runtime calls. One module per program (ARM9, ARM7).
+3. **The self-test**: vectors recorded with `armemu` for every
+   instruction form (ARM and Thumb, each condition) and for game
+   functions that run alone; the generated C++ compiled with clang
+   (MSYS2) and compared. Done when both programs compile and link and
+   the self-test shows no difference.
+4. **The runtime's first lines** (`ndskit/runtime/`, C++20): the CPU
+   context, main RAM, the TCMs, the dispatch, the self-test harness: what
+   the self-test needs and nothing more.
+
+Then phase 4 (the runtime core) begins: the first target is the boot to
+the first `OS_WaitVBlankIntr`, headless, compared with melonDS's
+savestates.
 
 Before starting: `python -m ndskit.rom ... --extract build/extract --nested`
 if `build/` is empty; the oracle needs PIL (`C:\Python314\python.exe`).
