@@ -27,6 +27,10 @@ before it was taken:
 | `933ee8d` | the README: the kit's own repository, ports clone it as a submodule | - |
 | `16e1e8a` | `sdat --waves`: the waves' formats and the banks' instrument kinds | Moon's archive: 102 PCM8 and 2 PCM16 waves, 95 PCM programs and 10 key splits (115 instruments) |
 | `5abc6c6` | discovery with an overlay loaded (`--overlay`), a trial descent refused when it runs into its own literal; `melonds --overlays` | Moon's discovery unchanged on both CPUs (6 580 and 943 functions); the build, 81 555 vectors with no failure, 74 bytes at frame 464 |
+| `ddc2f63` | discovery of C++'s tiny methods (pointers to member functions, tables of unknown methods, a function filling a gap, a return's literal pool as an end) | Moon's ARM9 6 580 to 6 613 functions, its ARM7 943 to 944: getters, setters, empty callbacks; 0 conflicts |
+| `31bf132` | overlays in the recompiler and the runtime; segments with a kind; `selftest --overlay` | Moon has no overlay: its modules as before; the build, 81 555 vectors, 74 bytes at frame 464, the route into the first room (3 644 frames) |
+| `c814b02` | `ndsrun --save-size` | Moon's runs unchanged (its save file sets the size) |
+| `3b94035` | the resident overlay checked by sampled words; a miss checks the slot again | the same checks, unchanged |
 
 ## Session 1
 
