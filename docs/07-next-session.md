@@ -2,12 +2,11 @@
 
 Phases 5 and 6 are done (`12-picture.md`, `13-sound.md`): `ndsrun
 --window` plays Moon in a window in real time, the 3D on OpenGL at the
-window's resolution, the sound on the host's audio device. Before
-anything else, **the user's ears**: the music, the effects and the
-movies' sound against melonDS's, in the menus and in the first rooms
-(a WAV of any run with `--wav`, if a passage needs a second listen).
-If the held samples sound harsh, interpolation between them (linear or
-cubic, as melonDS offers) is a small option to add.
+window's resolution, the sound on the host's audio device. The user
+listened against melonDS: the levels are the game's own, and the one
+fault heard (the introduction's movie crackling at first) is fixed; the
+sound is confirmed. Interpolation between samples (linear or cubic, as
+melonDS offers) stays a small option should a later room sound harsh.
 
 Then phase 7, the PC version, starting with **the controls**, the
 user's choice among the options of session 5 (the stylus is the camera

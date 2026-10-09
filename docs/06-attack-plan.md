@@ -171,7 +171,7 @@ clickable with the mouse when the cursor is released.
 | 3. Recompiler (session 3) | ARM and Thumb to C++, one module per program; an ARM interpreter as its oracle; the self-test (vectors from the interpreter) | both programs compile and link; the self-test has no difference (`09-recompiler.md`: 81 555 vectors) |
 | 4. Runtime core (session 4) | memory map with VRAM banks, interrupts, timers, DMA, IPC, the cartridge, the BIOS HLE; the ARM7 as a coroutine | headless, the game boots to its title, its RAM matching melonDS's states at the same points (`11-runtime.md`: 74 bytes of 4 MiB after 464 frames; into the first room with a script of presses) |
 | 5. Video (session 5) | the 2D engines in software, the geometry engine, the OpenGL renderer at N times the resolution; the window, the keyboard, the mouse as the stylus | the logos, the title, the first room on screen, played (`12-picture.md`: the route's pictures against melonDS's; the play is the user's) |
-| 6. Sound (session 6) | the 16 channels and capture, the mixer, the host's audio device | the music and effects, by ear against melonDS (`13-sound.md`: the channels' registers equal to melonDS's at five frames; the ear is the user's) |
+| 6. Sound (session 6) | the 16 channels and capture, the mixer, the host's audio device | the music and effects, by ear against melonDS (`13-sound.md`: the channels' registers equal to melonDS's at five frames; confirmed by the user's ear, the movies' crackle fixed) |
 | 7. PC | mouselook on the camera, the screens' layout, the frame rate, widescreen, draw distance; the backup memory as a file | played by the user |
 
 ## Oracle

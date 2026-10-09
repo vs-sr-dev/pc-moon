@@ -152,7 +152,9 @@ Along the route, at frame 3 642 in the first room, both play notes of
 the same samples with the same volumes, at other pitches: the music is
 at another point, the presses landing on other frames.
 
-By ear: the user's, in the window, against melonDS.
+By ear, the user's, in the window against melonDS: the levels the same
+(the music is loud in the game itself); the movie's crackle (above)
+fixed, then confirmed.
 
 ## Leftovers
 
