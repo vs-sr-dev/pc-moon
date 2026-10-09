@@ -11,7 +11,7 @@ goal beyond that is a PC shooter: the mouse as the camera, the keys of a
 PC shooter, the lower screen where a PC player wants it.
 
 This repository documents the cartridge, its formats and its code, and
-holds the port's tooling. Alongside it grows **ndskit**, a
+holds the port's tooling. Alongside it grows [ndskit](https://github.com/vs-sr-dev/ndskit), a
 game-agnostic toolkit for DS reverse engineering and static
 recompilation: everything the port needs that is not specific to Moon.
 ndskit was split out of this repository with its history and is taken
