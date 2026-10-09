@@ -31,6 +31,8 @@ before it was taken:
 | `31bf132` | overlays in the recompiler and the runtime; segments with a kind; `selftest --overlay` | Moon has no overlay: its modules as before; the build, 81 555 vectors, 74 bytes at frame 464, the route into the first room (3 644 frames) |
 | `c814b02` | `ndsrun --save-size` | Moon's runs unchanged (its save file sets the size) |
 | `3b94035` | the resident overlay checked by sampled words; a miss checks the slot again | the same checks, unchanged |
+| `1560296` | discovery across overlays (foreign targets, other overlays' areas, a veneer's pool as a boundary, a prologue after it) | Moon's ARM9 unchanged (6 613), its ARM7 947; 0 conflicts |
+| `01da2cf` | display capture, shadow polygons through the stencil, the save written on a fatal stop | the build, 81 555 vectors, 74 bytes at frame 464, the route into the first room; its pictures at frames 1 300 and 3 300 the same scenes as session 5's (the title's animation and the save's "Delete Data" apart) |
 
 ## Session 1
 
