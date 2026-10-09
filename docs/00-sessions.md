@@ -153,3 +153,31 @@
   edges (the DS's anti-aliasing, not drawn) and the player's position.
   The memories at frame 464 unchanged (74 bytes).
 * Headless runs draw only the frames they photograph: the route in 1.3 s.
+
+## Session 6 (2026-10-09) — the sound
+
+* **Moon is heard** (`13-sound.md`): the ARM7's sound unit in the
+  runtime, its 16 channels (PCM8, PCM16, IMA-ADPCM, PSG, noise), its two
+  capture units and its mixer, in the hardware's integers, a sample at a
+  time at the DS's 32 728.5 Hz in virtual time, run lazily (at each
+  access to its registers and each frame's end): a one-shot's busy bit
+  drops when its samples end, and a run is the same with or without a
+  listener. The window plays it through SDL3, its queue held near three
+  frames by nudging the playback ratio; `--wav` records any run,
+  `--mute` silences the window.
+* **Two faults before the first sound**: the boot left the speakers off
+  (POWCNT2 bit 0, which melonDS's boot sets and the SDK leaves alone),
+  and the BIOS's sine and volume tables rounded differently from the
+  BIOS's own (now exact, all 1 556 values: the volume table keeps 128 as
+  127 and 127 as 126, the channels reading 127 as 128).
+* **Against melonDS**: its savestates' sound unit read by
+  `ndskit.melonds`; at five frames with no input the same channels play
+  with the same registers. Every sound plays 87 frames earlier than in
+  melonDS, the game having waited there early in its boot (its frame
+  counters stand still in melonDS for some 85 frames): the cartridge's
+  time, not the sound's.
+* **What Moon uses**: sampled instruments only (PCM8 one-shots for
+  notes and effects), and PCM16 streams for the movies; no ADPCM, PSG,
+  noise or capture, which stay unchecked by this game.
+* The memories at frame 464 unchanged (74 bytes); the mixer costs
+  nothing measurable headless.

@@ -54,6 +54,16 @@ as the kit's.
 | `runtime/display.cpp`, `display.h`, `png.cpp`, `main.cpp` | the window (SDL3): the compositor on the GPU, the pace by the clock with the vertical sync, keyboard and mouse as the DS's buttons and stylus, F12 pictures; headless pictures through a hidden window; `ndsrun --window --scale --shots --shot-every`; PNG files | the route played in the window in real time (3 660 frames in 62.2 s on a 120 Hz display); pictures at the DS's size and at the window's |
 | `runtime/video.cpp`, `machine.cpp` | VRAM's areas exposed to the engines (the extended palettes mapped: banks E-I); the machine run a frame at a time (`nds_boot`, `nds_run_frame`, `nds_finish`); `io9.bin` with the memories | the self-test unchanged (81 555 vectors, no difference) |
 
+## Session 6
+
+| Module | What | Checked by |
+|---|---|---|
+| `runtime/sound.cpp` | the sound unit: 16 channels (PCM8, PCM16, IMA-ADPCM with its loop state, PSG on 8-13, noise on 14-15), the start delay, loops and one-shot ends with the busy bit; two capture units; the mixer in the hardware's integers (volume and divider, panning, SOUNDCNT's mixer outputs, the master volume, the bias, POWCNT2's speakers); run lazily in virtual time, at each register access and each frame's end; `sound.txt` (the channels' places) with the memories | Moon's music, effects and movie sound: at five frames with no input the same channels with the same registers as melonDS's savestates, every place in the samples apart by the same 87 frames (the cartridge's time); ADPCM, PSG, noise and capture not used by Moon |
+| `runtime/audio.cpp`, `main.cpp` | the sound to an SDL3 audio stream (resampled to the device's rate, the queue held near three frames by the playback ratio, at most 0.5%), WAV files; `ndsrun --mute`, `--wav` | 2 500 frames in the window on a 44.1 kHz device: the queue never dry, never cut |
+| `runtime/bios.cpp` | the ARM7's sine table times 32 767; the volume table out of 128 with 128 kept as 127 and 127 as 126 | all 64, 768 and 724 values against the BIOS's tables (DeSmuME's copy) |
+| `runtime/mmio.cpp`, `machine.cpp` | POWCNT2 = 1 at the boot (the speakers on, as melonDS's boot and the real one leave it); `io7.bin` with the memories | the memories at frame 464 unchanged (74 bytes); the self-test unchanged (81 555 vectors) |
+| `melonds` | the "SPU." section: the unit's registers and each channel's place; `--info` lists a state's running channels, `--compare` both units' channels side by side | Moon's states (registers that read back what the game wrote: format, volume, pan, source, timer, loop, length) |
+
 These modules are checked on Moon only: the user's other two cartridges
 have not been run on the runtime (it loads no overlays yet, and one has
 366; discovery does not know the other's Thumb switches).

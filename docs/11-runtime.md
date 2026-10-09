@@ -31,8 +31,9 @@ has, whose bytes it found in the program's image, and it printed the
 option to give.
 
 A run writes into `--out` the memories (`main.bin`, `itcm.bin`,
-`dtcm.bin`, `swram.bin`, `wram7.bin`), the CPUs' registers (`cpus.txt`)
-and the game's save (`<rom>.sav`, read back by the next run in the same
+`dtcm.bin`, `swram.bin`, `wram7.bin`), the CPUs' registers (`cpus.txt`),
+both CPUs' I/O registers (`io9.bin`, `io7.bin`; session 6: with each
+running sound channel's place in `sound.txt`) and the game's save (`<rom>.sav`, read back by the next run in the same
 directory: a run from a new cartridge wants a new directory).
 
 ## The machine
@@ -43,13 +44,13 @@ directory: a run from a new cartridge wants a new directory).
 | The two CPUs | each on its own coroutine (Windows fibers; ucontext elsewhere, not built yet), with its own clock; a wait in the BIOS (`SVC_WaitByLoop`) gives the other CPU its turn, which is how the SDK's PXI handshake (each CPU waiting for the other's echo in IPCSYNC) goes through |
 | Threads | each of the SDK's threads on its own coroutine too: recompiled code nests its calls on the host stack, so a thread switched out keeps its frames until it is switched back in. The switches are the guest's: `OS_LoadContext`'s exception return and the IRQ handler's return with another thread's context in the BIOS's frame. The target names the thread: an interrupt taken at a safe point pushes a marker (0x0F000000 + 16 x the thread's number) as its return address; a context saved by `OS_SaveContext` is found by the sp the runtime noted when the save returned; an entry is a new thread. A thread switched back in at its save returns through the save's `bx lr`, and the save's caller (`OSi_RescheduleThread`, 0x02116B00) unwinds to the call's return address |
 | Interrupts | IME, IE and IF on each CPU, taken at safe points, at a halt's end and after an `msr` that unmasks them: IRQ mode, r0-r3, r12 and the return address pushed on the IRQ stack, the handler at the DTCM's end (0x027E3FFC) or 0x0380FFFC called, the frame popped, CPSR = SPSR_irq |
-| BIOS | melonDS's direct boot (the programs at their load addresses, the header at 0x027FFE00, the chip ID, the firmware's user settings at 0x027FFC80, both CPUs in system mode with the BIOS's stacks); the SWIs the game calls in C++ (WaitByLoop, IntrWait, VBlankIntrWait, Halt, Div, CpuSet, CpuFastSet, Sqrt, GetCRC16, IsDebugger, the LZ77 and RL decompressors, SoundBias, the ARM7's sine, pitch and volume tables); the Nintendo logo the SDK copies from the ARM9 BIOS (served from the cartridge's header, where it is the same) |
+| BIOS | melonDS's direct boot (the programs at their load addresses, the header at 0x027FFE00, the chip ID, the firmware's user settings at 0x027FFC80, both CPUs in system mode with the BIOS's stacks); the SWIs the game calls in C++ (WaitByLoop, IntrWait, VBlankIntrWait, Halt, Div, CpuSet, CpuFastSet, Sqrt, GetCRC16, IsDebugger, the LZ77 and RL decompressors, SoundBias, the ARM7's sine, pitch and volume tables, checked against the BIOS's in session 6); the Nintendo logo the SDK copies from the ARM9 BIOS (served from the cartridge's header, where it is the same) |
 | Memory | main RAM, the TCMs (where CP15 puts them, on or off), the ARM7's WRAM and the shared WRAM as host arrays; the palettes, OAM and VRAM through its nine banks, mapped by VRAMCNT to the LCDC area, the 2D engines, the texture slots and the ARM7 in 16 KiB pages; the GBA slot empty |
 | I/O | each CPU's registers as storage, the ones with an effect sent to their device: DISPSTAT and VCOUNT, the timers (counters worked out from the time, an event at each overflow, count-up), DMA (immediate, VBlank, HBlank, the card's, the geometry FIFO's), IPC (SYNC, both FIFOs, their interrupts), the maths unit (DIV and SQRT with melonDS's results), KEYINPUT, EXTKEYIN, HALTCNT, POWCNT, WRAMCNT |
 | The cartridge | ROMCTRL runs a command at once: the main-data read 0xB7 over the .nds file, the chip ID 0xB8; its words at 0x04100010 for the CPU or the card's DMA, the card interrupt at the end. The backup memory on AUXSPI: Moon's is an EEPROM of 64 Kbit (2-byte addresses), kept in the save file |
-| The ARM7's devices | SPI: the power manager's registers, the firmware (made up as melonDS makes it: user settings "melonDS", English; the MAC address 00:09:BF:11:22:33; reads, writes, status), the touch screen's controller (positions from the input script); the RTC (its serial protocol, a fixed date: 2009-04-20, Moon's European release); the sound registers, a one-shot channel busy until its samples would have played |
+| The ARM7's devices | SPI: the power manager's registers, the firmware (made up as melonDS makes it: user settings "melonDS", English; the MAC address 00:09:BF:11:22:33; reads, writes, status), the touch screen's controller (positions from the input script); the RTC (its serial protocol, a fixed date: 2009-04-20, Moon's European release) |
 | The picture | the 2D engines, the geometry engine, the renderer and the window: `12-picture.md` (session 5) |
-| Not yet | the mixer (phase 6) |
+| The sound | the sound unit, the audio device, WAV files: `13-sound.md` (session 6) |
 
 ## Against melonDS
 

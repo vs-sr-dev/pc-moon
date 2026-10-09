@@ -10,9 +10,17 @@ What is not known yet, roughly in the order the port will need it.
   (`11-runtime.md`). Whether any of the game's behaviour depends on them
   (a random seed, a movie's pacing) is to be seen; a finer cost (per
   block, from the instructions) is the remedy if so.
-* **The BIOS's sound tables** (volume, pitch, sine on the ARM7) are
-  worked out from their definitions; whether they round as the BIOS does
-  is for phase 6, by ear and against melonDS's results.
+* ~~**The BIOS's sound tables**~~ (session 6): every value checked
+  against the BIOS's own tables; the sine and the volume rounded
+  differently at first (`13-sound.md`).
+* **The cartridge's time** (session 6). A command of the cartridge
+  answers at once; melonDS takes the card's time. Early in the boot
+  (frames 520-639 with no input) the game's frame counters stand still
+  in melonDS for some 85 frames and not in the runtime, and from there
+  every sound plays 87 frames earlier than melonDS's, with the same
+  registers (`13-sound.md`). A file being read is the likely reason (an
+  inference). On a PC a load that ends at once is welcome; it matters
+  only if a sound or a movie is timed against a load.
 * **The firmware's wireless block** (0x2A-0x163) is left empty; melonDS
   fills it with its defaults. Moon has no multiplayer: harmless unless
   the wireless driver checks it at boot (it did not stop a run).
