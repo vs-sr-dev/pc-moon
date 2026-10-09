@@ -17,6 +17,17 @@ submodule: the recompiler's output builds, the self-test gives 81 555
 vectors with no failure, and the run of 466 VBlanks is 74 bytes of main
 RAM from melonDS's state at frame 464, as before.
 
+## From pc-nostalgia
+
+Changes of the kit made for the second game, each checked here as above
+before it was taken:
+
+| Commit | What | Here |
+|---|---|---|
+| `933ee8d` | the README: the kit's own repository, ports clone it as a submodule | - |
+| `16e1e8a` | `sdat --waves`: the waves' formats and the banks' instrument kinds | Moon's archive: 102 PCM8 and 2 PCM16 waves, 95 PCM programs and 10 key splits (115 instruments) |
+| `5abc6c6` | discovery with an overlay loaded (`--overlay`), a trial descent refused when it runs into its own literal; `melonds --overlays` | Moon's discovery unchanged on both CPUs (6 580 and 943 functions); the build, 81 555 vectors with no failure, 74 bytes at frame 464 |
+
 ## Session 1
 
 | Module | What | Checked by |
