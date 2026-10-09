@@ -28,9 +28,9 @@ python -m ndskit.melonds build/oracle/p6/t20.ml1 --info                  # a sta
 
 | Part | How |
 |---|---|
-| Time | an output sample every 1 024 system cycles (2 048 ticks of the runtime's clock, 32 728.5 Hz). The unit is run lazily: up to the running CPU's time whenever the ARM7 reads or writes its registers, and up to the machine's at each frame's end. So the busy bit the SDK's driver polls drops when a one-shot's samples end, a run is the same with or without a listener, and the unit costs nothing measurable (the route headless: 1.09 s against 1.06 s without it) |
+| Time | an output sample every 1 024 system cycles (2 048 ticks of the runtime's clock, 32 728.5 Hz). The unit runs up to the machine's time after each quantum (a quarter of a line, half a sample) and up to the ARM7's whenever the ARM7 reads or writes its registers. So a channel reads memory as it stands at the channel's own time, the busy bit the SDK's driver polls drops when a one-shot's samples end, a run is the same with or without a listener, and the unit costs nothing measurable (the route headless: 1.06 s with it, as without) |
 | Channels | each output sample a channel's timer (the system clock / 2, from the channel's reload) advances 512 and each overflow steps it: PCM8 and PCM16 read the next sample; IMA-ADPCM decodes the next nibble (the first word is the header, value and step index; the state at the loop start is kept for the loops); PSG on channels 8-13 the next eighth of a square wave of duty (n + 1) / 8; noise on 14-15 the next bit of a 15-bit LFSR. A sampled channel starts 3 steps late (ADPCM spends 8 nibbles' time on its header) and plays nothing with under 16 bytes; looped, it goes back to its loop start; one-shot, it stops after its last sample, silent, its busy bit cleared |
-| Samples | read through the ARM7's memory map as they are played (main RAM, the shared WRAM, the ARM7's WRAM). The hardware's FIFO reads up to 32 bytes ahead: only data changing under a playing channel could tell the two apart (Moon's movies stream their sound through a ring buffer in main RAM, 0x0234F320, which the ARM9 refills behind the play position: an inference) |
+| Samples | read through the ARM7's memory map (main RAM, the shared WRAM, the ARM7's WRAM) into a FIFO of 8 words, as the hardware does: 32 bytes as the channel starts, 16 more each time it is down to 16. A stream refilled right behind the play position counts on that read-ahead (below) |
 | The mix | in integers at the hardware's widths: the sample times 16 >> the divider's shift (0, 1, 2, 4) times the volume (127 counting as 128); panned by 128 - pan and pan (127 as 128), >> 10; channels 1 and 3 left out of the mixer by SOUNDCNT bits 12-13; the outputs the mixer, channel 1, 3 or both (bits 8-11); the master volume (127 as 128) >> 7, then >> 8, plus SOUNDBIAS << 6, centred on 0x200 (the bias every SDK sets), clipped to 16 bits. Silent unless SOUNDCNT bit 15 and POWCNT2 bit 0 (the speakers). The DS truncates the output to 10 bits; it is kept at 16 here |
 | Capture | units 0 and 1 take the left and right mixer (or channels 0 and 2), at the timers of channels 1 and 3, as PCM8 or PCM16 into the ARM7's memory, once or repeating; "add to the next channel" (bit 0) is noted, not done. Moon never starts one |
 | To the host (`audio.cpp`) | each frame the samples go to an SDL3 audio stream, which resamples them to the device's rate. The window keeps the DS's pace by the host's clock and the device plays by its own: the stream's queue is held near three frames (about 50 ms) by nudging its playback ratio, by at most 0.5% (a twelfth of a semitone). A queue run dry plays silence until the next frame; one past half a second is cut back. At the end the run says how it went. WAV files: 16-bit stereo, 32 728 Hz in the header, the header rewritten each frame so a run stopped by an error leaves a whole file |
@@ -84,6 +84,42 @@ Two things were wrong before a sample was heard:
   (an inference that makes all 724 values exact; 238 were one off).
   Before the fix a note melonDS plays at volume 95 played at 94.
 
+## The movies' crackle
+
+The user's ears, first thing: the introduction's movie crackled for its
+first seconds, then came right; melonDS's was clean from the start. Two
+faults, both in when the samples were read.
+
+How the movie feeds its sound (read in the code): its feeder loop
+(0x0207E0F0) writes a block of 128 samples (256 bytes) into the ring of
+42 blocks whenever `written - played < 42`, `played` being a 64-bit
+count at 0x02151458 that an OS alarm of the ARM9 advances every 128
+samples' time (3 036 ticks of the OS clock), started with the channel.
+At first the decoder has a backlog, so it writes each block the moment
+the alarm frees it; later it lags well behind (1 800 bytes) and nothing
+is close.
+
+* **The unit ran only now and then**: at the ARM7's register accesses and
+  at each frame's end. Catching up, it read the memory as it stood then,
+  after the ARM9 had refilled the blocks: samples due milliseconds before
+  came out from the next lap. Counted per sample of the ring (writes
+  between two reads of channel 0: one is right), in the movie's first
+  990 frames some 5 500 samples were read stale and 5 000 overwritten
+  twice, nearly all in its first four seconds; at the alarm's counts the
+  channel, as last caught up, stood anywhere from a quarter to all of
+  the way through the block it should have finished. Run after each
+  quantum, the channel stands 125 samples into each block, every time:
+  the alarm's period from the channel's start, less the 3 samples a
+  channel waits before its first.
+* **The FIFO**: those 3 samples. When the alarm says a block is played,
+  its last 3 samples are still to play, and the feeder overwrites them
+  at once; the hardware has them in its FIFO by then. Read at the moment
+  of playing, 53 samples came out wrong at the movie's start; through the
+  FIFO, none.
+
+After both, over the movie's first 990 frames: no sample read stale, none
+overwritten before it was played.
+
 ## Against melonDS
 
 melonDS's savestates hold the sound unit (section `SPU.`: SOUNDCNT, the
@@ -123,6 +159,5 @@ By ear: the user's, in the window, against melonDS.
 * Interpolation between samples: the DS has none (each sample holds
   until the next); melonDS offers linear, cosine, cubic and SNES-gaussian
   as options. A choice for the PC version, by ear.
-* Capture's "add to the next channel" mode; the FIFO's read-ahead;
-  the 10-bit output (kept at 16 bits on purpose).
+* Capture's "add to the next channel" mode; the 10-bit output (kept at 16 bits on purpose).
 * The cartridge's time (above).

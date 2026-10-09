@@ -159,10 +159,9 @@
 * **Moon is heard** (`13-sound.md`): the ARM7's sound unit in the
   runtime, its 16 channels (PCM8, PCM16, IMA-ADPCM, PSG, noise), its two
   capture units and its mixer, in the hardware's integers, a sample at a
-  time at the DS's 32 728.5 Hz in virtual time, run lazily (at each
-  access to its registers and each frame's end): a one-shot's busy bit
-  drops when its samples end, and a run is the same with or without a
-  listener. The window plays it through SDL3, its queue held near three
+  time at the DS's 32 728.5 Hz in virtual time, run after every quantum
+  and at each access to its registers: a one-shot's busy bit drops when
+  its samples end, and a run is the same with or without a listener. The window plays it through SDL3, its queue held near three
   frames by nudging the playback ratio; `--wav` records any run,
   `--mute` silences the window.
 * **Two faults before the first sound**: the boot left the speakers off
@@ -179,5 +178,13 @@
 * **What Moon uses**: sampled instruments only (PCM8 one-shots for
   notes and effects), and PCM16 streams for the movies; no ADPCM, PSG,
   noise or capture, which stay unchecked by this game.
+* **The user's ears**: the levels as melonDS's (the music is loud in
+  the game itself); the introduction's movie crackled for its first
+  seconds. Two faults in when samples were read: the unit caught up only
+  at register accesses and frame ends, reading memory the ARM9 had
+  already refilled (now run after every quantum), and the hardware's FIFO
+  read-ahead, which the movie's feeder counts on by 3 samples (now done).
+  Read from the game's code: its feeder writes as soon as an ARM9 alarm
+  counts a block played.
 * The memories at frame 464 unchanged (74 bytes); the mixer costs
   nothing measurable headless.
