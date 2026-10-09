@@ -14,8 +14,9 @@ This repository documents the cartridge, its formats and its code, and
 holds the port's tooling. Alongside it grows **ndskit**, a
 game-agnostic toolkit for DS reverse engineering and static
 recompilation: everything the port needs that is not specific to Moon.
-ndskit lives in `ndskit/` for now; it will move to its own repository
-and come back here as a submodule, as wiikit did from its first port.
+ndskit was split out of this repository with its history and is taken
+back as a git submodule at `ndskit/`: clone with `--recursive` (or run
+`git submodule update --init` after a clone).
 
 ## BYOA — Bring Your Own Assets
 
@@ -61,7 +62,7 @@ the window's); `--mute` turns the sound off; `--wav FILE` records it.
 
     docs/            cartridge, format and code analysis, and the plan
     tools/           Moon-specific tools: oracle.py
-    ndskit/          the game-agnostic DS toolkit (to become a submodule)
+    ndskit/          the game-agnostic DS toolkit (a submodule)
     rom/, build/     your cartridge and everything derived from it (ignored by git)
 
 ## Tools

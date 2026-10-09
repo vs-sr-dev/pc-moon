@@ -33,8 +33,8 @@ widescreen, the draw distance (`DrawDistance` in the game's INI files),
 creating the repositories, but they are created only when ndskit has a
 second game (the rule: a kit proven on two). The next port is
 pc-nostalgia (Nostalgia, DS); when it reaches that point, the three
-repositories (ndskit split out of `ndskit/` with its history, pc-moon,
-pc-nostalgia) are created and pushed together. Until then nothing here
+repositories (ndskit, now split out with its history and a submodule
+here, pc-moon, pc-nostalgia) are created and pushed together. Until then nothing here
 is pushed. Session 6 swept this repository for publication: no
 cartridge content in the history, a clean clone builds and runs as the
 README says.

@@ -1,11 +1,21 @@
 # What this port gave ndskit
 
-ndskit is born with this port, in `ndskit/`. It will be split out with
-its history (`git subtree split --prefix ndskit`) into its own
-repository, `D:\Homebrew6\ndskit`, and come back here as a submodule at
-the same path, as wiikit did from pc-victorious. Until then a commit
-that changes `ndskit/` changes only `ndskit/`, so the split history reads
-as the kit's.
+ndskit was born with this port, in `ndskit/`. When its second port,
+pc-nostalgia, began, it was split out with its history (`git subtree
+split --prefix ndskit`) into its own repository and came back here as a
+git submodule at the same path (URL `../ndskit`, relative, so it follows
+wherever the repositories live), as wiikit did from pc-victorious. A
+commit that changes ndskit is made in the kit; this repository records
+which commit of the kit it builds with, and each change of the kit is
+checked here before it is taken.
+
+## The split (pc-nostalgia's session 1)
+
+The kit's eight commits came out of this history with their content
+unchanged; `ndskit/` was replaced by the submodule. Checked on the
+submodule: the recompiler's output builds, the self-test gives 81 555
+vectors with no failure, and the run of 466 VBlanks is 74 bytes of main
+RAM from melonDS's state at frame 464, as before.
 
 ## Session 1
 
