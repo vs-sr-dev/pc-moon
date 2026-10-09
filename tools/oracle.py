@@ -4,9 +4,9 @@
     python tools/oracle.py --peek STATE.ml1 ADDR:LEN [ADDR:LEN ...]
 
 Boots the cartridge (the .nds in the repository's root or in rom/) in a
-copy of melonDS kept for this (ORACLE_DIR, with its own melonDS.toml: no
-DLDI card, the keys mapped; its save and state paths are pointed at DIR
-before every launch) and, at each time given (seconds since the launch,
+copy of melonDS kept for this (ORACLE_DIR, from the environment if set,
+with its own melonDS.toml: no DLDI card, the keys mapped; its save and
+state paths are pointed at DIR before every launch) and, at each time given (seconds since the launch,
 wall clock), does WHAT:
 
     shot                 the window's two screens, saved as DIR/t<SECONDS>.png
@@ -51,7 +51,8 @@ import sys
 import time
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-ORACLE_DIR = r"D:\Tools\melonDS-oracle"
+# melonDS.exe and its melonDS.toml; $ORACLE_DIR, or where the author keeps it
+ORACLE_DIR = os.environ.get("ORACLE_DIR", r"D:\Tools\melonDS-oracle")
 
 user32 = ctypes.windll.user32
 try:

@@ -8,22 +8,36 @@ fault heard (the introduction's movie crackling at first) is fixed; the
 sound is confirmed. Interpolation between samples (linear or cubic, as
 melonDS offers) stays a small option should a later room sound harsh.
 
-Then phase 7, the PC version, starting with **the controls**, the
-user's choice among the options of session 5 (the stylus is the camera
-and also taps the lower screen's buttons):
+Next, phase 7, the PC version, starting with **the controls**. The
+user chose (session 6) true mouselook, and the classic keys of a PC
+shooter, reached step by step:
 
-1. the right mouse button held as a relative drag from a neutral point
-   of the lower screen (the camera), the left button as the stylus;
-2. the mouse captured whenever a game state in RAM says "playing", a
-   key freeing the cursor for the lower screen;
-3. true mouselook through a hook on the camera (the view matrix at
-   0x021512E0, its writer still to find: `ndsrun --watch 021512E0:34`
-   with a drag; the input script needs drags first), the lower screen's
-   actions on keys.
+* **Mouselook** through a hook on the camera: the view matrix at
+  0x021512E0, its writer still to find (`ndsrun --watch 021512E0:34`
+  with a drag; the input script needs drags first). The stylus's drags
+  on the lower screen are how the DS turns the camera; the mouse then
+  turns it directly.
+* **The left mouse button fires** (on the DS a shoulder button: L or R,
+  to confirm in the game's options).
+* **WASD as the D-pad.**
+* **E for the lower screen's interaction button** (doors and the
+  like: a tap at its place on the lower screen, to find).
+* Then the rest of a PC shooter's map, as the user lists it; the
+  lower screen's other actions on keys.
 
-And the key mapping, redone for a PC (the user's list); then the
-screens' layout (the lower screen beside or over the upper), widescreen,
-the draw distance (`DrawDistance` in the game's INI files), 60 frames.
+Then the screens' layout (the lower screen beside or over the upper),
+widescreen, the draw distance (`DrawDistance` in the game's INI files),
+60 frames.
+
+**Publication.** Moon works "until proven otherwise", the line for
+creating the repositories, but they are created only when ndskit has a
+second game (the rule: a kit proven on two). The next port is
+pc-nostalgia (Nostalgia, DS); when it reaches that point, the three
+repositories (ndskit split out of `ndskit/` with its history, pc-moon,
+pc-nostalgia) are created and pushed together. Until then nothing here
+is pushed. Session 6 swept this repository for publication: no
+cartridge content in the history, a clean clone builds and runs as the
+README says.
 
 Left from phases 4-6, when they matter: the cartridge's time (every
 load ends at once; melonDS's take time, `05-open-questions.md`); the

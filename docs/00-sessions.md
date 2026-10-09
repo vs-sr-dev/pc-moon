@@ -188,3 +188,13 @@
   counts a block played.
 * The memories at frame 464 unchanged (74 bytes); the mixer costs
   nothing measurable headless.
+* **The controls chosen** for phase 7 (`07-next-session.md`): true
+  mouselook on the camera, the left button to fire, WASD as the D-pad,
+  E for the lower screen's interaction button, toward a PC shooter's
+  keys.
+* **Ready to publish, not published**: no cartridge content anywhere in
+  the history (sources and documents only, the largest 41 KB); a clean
+  clone recompiles, builds without a warning and runs, its memories at
+  frame 464 the same 74 bytes from melonDS's; the README tells how to
+  play; the oracle's melonDS directory comes from `ORACLE_DIR`. The
+  repositories wait for ndskit's second game, pc-nostalgia.

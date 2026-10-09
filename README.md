@@ -1,14 +1,17 @@
 # pc-moon
 
-Toward a native PC port of **Moon** (Nintendo DS, Renegade Kid, 2009),
-the first-person shooter set in a buried alien complex under the lunar
+A native PC port of **Moon** (Nintendo DS, Renegade Kid, 2009), the
+first-person shooter set in a buried alien complex under the lunar
 surface: corridors, a remote drone, a moon buggy, and some of the most
-ambitious 3D the DS ran. The goal is the game running natively on PC,
-and running as a PC shooter: the 3D at the screen's resolution, the
-mouse as the camera, the lower screen where a PC player wants it.
+ambitious 3D the DS ran. Both of the cartridge's programs are
+recompiled statically to C++ and run on a runtime that replaces the
+DS's hardware: Moon plays on PC in a window, its 3D drawn by the PC's
+GPU at the window's resolution, its sound on the PC's audio device. The
+goal beyond that is a PC shooter: the mouse as the camera, the keys of a
+PC shooter, the lower screen where a PC player wants it.
 
 This repository documents the cartridge, its formats and its code, and
-grows the tooling for the port. Alongside it grows **ndskit**, a
+holds the port's tooling. Alongside it grows **ndskit**, a
 game-agnostic toolkit for DS reverse engineering and static
 recompilation: everything the port needs that is not specific to Moon.
 ndskit lives in `ndskit/` for now; it will move to its own repository
@@ -22,6 +25,38 @@ done on the European release, `Moon (Europe) (En,Fr,De,Es,It).nds`
 (game code COOP, version 0, NitroSDK 4.2), a 64 MiB image with its
 secure area decrypted, placed in the repository's root or in `rom/`.
 
+## Playing it
+
+You need Python 3, and to build: clang, CMake, Ninja and SDL3 (on
+Windows, MSYS2's `mingw-w64-x86_64` packages), and a GPU with OpenGL
+4.5. From the repository's root, with your cartridge there:
+
+```sh
+ROM="Moon (Europe) (En,Fr,De,Es,It).nds"
+export PATH=/c/msys64/mingw64/bin:$PATH       # Windows: MSYS2's tools, and SDL3.dll at run time
+python -m ndskit.recomp "$ROM" --out build/recomp --copy 9:01FF9A60=0212FED4:659C   # about 20 s
+cmake -S build/recomp -B build/recomp/b -G Ninja -DCMAKE_CXX_COMPILER=clang++
+ninja -C build/recomp/b                                                             # about a minute
+build/recomp/b/ndsrun "$ROM" --window --out build/play
+```
+
+The save is kept in `build/play` (the `--out` directory). For now the
+keys are melonDS's defaults; a PC shooter's keys and the mouse as the
+camera are the next step.
+
+| Key | DS |
+|---|---|
+| X, Z, S, A | A, B, X, Y |
+| Q, W | L, R |
+| Enter, Backspace | START, SELECT |
+| the arrows | the D-pad |
+| left mouse button, on the lower screen | the stylus |
+| F12 | a picture into `build/play` |
+| Escape | quit (the save is written) |
+
+`--scale N` draws the 3D at N times the DS's resolution (by default,
+the window's); `--mute` turns the sound off; `--wav FILE` records it.
+
 ## Layout
 
     docs/            cartridge, format and code analysis, and the plan
@@ -31,10 +66,10 @@ secure area decrypted, placed in the repository's root or in `rom/`.
 
 ## Tools
 
-The Python tools need only Python 3.8+ and no dependencies (the oracle
-needs PIL for its screenshots). The oracle needs melonDS; the
-recompiled code, clang, CMake and Ninja (MSYS2's on Windows). Run from
-the repository root.
+The Python tools need only Python 3 and no dependencies (the oracle
+needs PIL for its screenshots, and a copy of melonDS for itself:
+`ORACLE_DIR`, `tools/oracle.py`). The recompiled code needs clang, CMake,
+Ninja and SDL3. Run from the repository root.
 
 ```sh
 ROM="Moon (Europe) (En,Fr,De,Es,It).nds"
@@ -70,6 +105,10 @@ python -m ndskit.armemu "$ROM" --cpu 9 --call 02126428 --regs r0=64,r1=7      # 
 build/recomp/b/ndsrun "$ROM" --out build/run --vblanks 466
 python -m ndskit.melonds build/oracle/first.ml1 --compare build/run
 build/recomp/b/ndsrun "$ROM" --out build/route --vblanks 3644 --input "1182:START,1542:tap:128:96,1902:START,2082:START,2262:START,2442:START,2622:A,2862:tap:128:120,3042:tap:128:120,3222:tap:128:120,3402:UP"
+
+# the picture and the sound, headless: both screens at given frames, the sound as a file (docs/12, 13)
+build/recomp/b/ndsrun "$ROM" --out build/p5 --vblanks 1500 --shots 700,1400 --wav build/p5/sound.wav
+python -m ndskit.melonds build/oracle/first.ml1 --info                 # a state's sections and sound channels
 
 # the oracle: melonDS, pressed, photographed and read through its savestates
 python tools/oracle.py --fresh --at 20:START,32:START,38:tap:128:96,44:A,48:shot,50:state
@@ -114,6 +153,19 @@ it runs), reads its save and, with eleven presses, walks its menus into
 the first room. Against melonDS at the same frame and with the same save, 74 bytes of
 4 MiB of main RAM differ after 464 frames (`docs/11-runtime.md`).
 
+Session 5: the picture. Moon plays in a window in real time: the 2D
+engines in software, the geometry engine in the DS's fixed point, the
+3D drawn with OpenGL at the window's resolution, the keyboard and the
+mouse as the DS's buttons and stylus. Along the route the pictures match
+melonDS's at the same frames (`docs/12-picture.md`).
+
+Session 6: the sound. The ARM7's sound unit (16 channels, capture, the
+mixer) runs in virtual time and plays through SDL3; any run can write
+it to a WAV file. Its registers match melonDS's at the same frames, and
+the user's ears confirmed it against melonDS, after a crackle at the
+start of the movies was traced to when samples were read
+(`docs/13-sound.md`).
+
 ## Documentation
 
 * [00-sessions.md](docs/00-sessions.md) — what each session did
@@ -126,6 +178,8 @@ the first room. Against melonDS at the same frame and with the same save, 74 byt
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
 * [09-recompiler.md](docs/09-recompiler.md) — ARM and Thumb to C++, the self-test
 * [11-runtime.md](docs/11-runtime.md) — the machine: CPUs, threads, interrupts, BIOS, I/O; against melonDS
+* [12-picture.md](docs/12-picture.md) — the 2D engines, the geometry engine, the OpenGL renderer, the window
+* [13-sound.md](docs/13-sound.md) — the sound unit, the audio device, the movies' crackle
 * [10-ndskit.md](docs/10-ndskit.md) — what this port gave ndskit
 
 ## Licence
