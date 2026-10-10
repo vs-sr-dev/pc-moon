@@ -45,6 +45,8 @@ Sinistrals, each checked here as above before it was taken:
 | `b2c3fd6` | `lz`: the BIOS's Huffman (4- and 8-bit units) | - (Moon's files are LZ77) |
 | `49a3de7` | discovery: CodeWarrior's Thumb switches, a newer ARM7's halfword tables, Thumb's `bl` as a long branch (walked as a `b`, emitted as a goto or a tail call), Thumb's return through a popped register, a conditional `movne lr, pc` call, a jump into code unrolled by two instructions, a guessed entry refused when its descent meets data | Moon's discovery unchanged on both CPUs (the lists identical); the build, 81 555 vectors with no failure, 74 bytes at frame 464, the route into the first room (3 642 frames of the SDK's count, 19 450 bytes as before) |
 | `6eda9f5` | the self-test checks the overlay slots again after loading an image | 81 555 vectors, no failure |
+| `08ba0d2` | an ARM interpreter in the runtime (code no module holds, functions the emitter cannot take; the self-test's `--interp`); overlays told apart function by function; a compressed program's stored image as a segment; the emitter's Thumb `add pc, rB` read unaligned; discovery's pushed-constant `pop {pc}` as a jump; `--auto` keeps only vectors that run discovered code; display capture from engine A's graphics; VRAM in the run's dump | discovery unchanged on both CPUs; the build, 81 587 vectors (the instruction test's new Thumb switches) with no failure, recompiled and interpreted; 74 bytes at frame 464; the route into the first room to frame 3 644 |
+| `720c636` | the overlay log tells each change of hands | - (no overlays) |
 
 ## Session 1
 
