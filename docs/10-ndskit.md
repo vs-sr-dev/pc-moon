@@ -47,6 +47,7 @@ Sinistrals, each checked here as above before it was taken:
 | `6eda9f5` | the self-test checks the overlay slots again after loading an image | 81 555 vectors, no failure |
 | `08ba0d2` | an ARM interpreter in the runtime (code no module holds, functions the emitter cannot take; the self-test's `--interp`); overlays told apart function by function; a compressed program's stored image as a segment; the emitter's Thumb `add pc, rB` read unaligned; discovery's pushed-constant `pop {pc}` as a jump; `--auto` keeps only vectors that run discovered code; display capture from engine A's graphics; VRAM in the run's dump | discovery unchanged on both CPUs; the build, 81 587 vectors (the instruction test's new Thumb switches) with no failure, recompiled and interpreted; 74 bytes at frame 464; the route into the first room to frame 3 644 |
 | `720c636` | the overlay log tells each change of hands | - (no overlays) |
+| `5ee24af` | the README with its third game (pc-lufiacots in the ports table; the layers, checks and known gaps brought up to date) | - (the README only) |
 
 ## Session 1
 
