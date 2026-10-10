@@ -33,6 +33,18 @@ before it was taken:
 | `3b94035` | the resident overlay checked by sampled words; a miss checks the slot again | the same checks, unchanged |
 | `1560296` | discovery across overlays (foreign targets, other overlays' areas, a veneer's pool as a boundary, a prologue after it) | Moon's ARM9 unchanged (6 613), its ARM7 947; 0 conflicts |
 | `01da2cf` | display capture, shadow polygons through the stencil, the save written on a fatal stop | the build, 81 555 vectors, 74 bytes at frame 464, the route into the first room; its pictures at frames 1 300 and 3 300 the same scenes as session 5's (the title's animation and the save's "Delete Data" apart) |
+| `379f04a` | the README for publication | - |
+
+## From pc-lufiacots
+
+Changes of the kit made for the third game, Lufia: Curse of the
+Sinistrals, each checked here as above before it was taken:
+
+| Commit | What | Here |
+|---|---|---|
+| `b2c3fd6` | `lz`: the BIOS's Huffman (4- and 8-bit units) | - (Moon's files are LZ77) |
+| `49a3de7` | discovery: CodeWarrior's Thumb switches, a newer ARM7's halfword tables, Thumb's `bl` as a long branch (walked as a `b`, emitted as a goto or a tail call), Thumb's return through a popped register, a conditional `movne lr, pc` call, a jump into code unrolled by two instructions, a guessed entry refused when its descent meets data | Moon's discovery unchanged on both CPUs (the lists identical); the build, 81 555 vectors with no failure, 74 bytes at frame 464, the route into the first room (3 642 frames of the SDK's count, 19 450 bytes as before) |
+| `6eda9f5` | the self-test checks the overlay slots again after loading an image | 81 555 vectors, no failure |
 
 ## Session 1
 
