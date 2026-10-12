@@ -49,6 +49,17 @@ Sinistrals, each checked here as above before it was taken:
 | `720c636` | the overlay log tells each change of hands | - (no overlays) |
 | `5ee24af` | the README with its third game (pc-lufiacots in the ports table; the layers, checks and known gaps brought up to date) | - (the README only) |
 
+## From pc-finalfantasy12revenantwings
+
+Changes of the kit made for the fourth game, Final Fantasy XII: Revenant
+Wings, each checked here as above before it was taken:
+
+| Commit | What | Here |
+|---|---|---|
+| `ad61a11` | a thread switch takes the rest of the CPU's quantum: the other CPU runs before the woken thread (the fourth game's frame start read the ARM7's VBlank count before the ARM7 had stored it, and ran at 60 frames a second instead of 30) | the build, 81 587 vectors with no failure, recompiled and interpreted; 74 bytes at frame 464, as before; the route into the first room to frame 3 644 |
+
+The submodule is at `ad61a11`.
+
 ## Session 1
 
 | Module | What | Checked by |
